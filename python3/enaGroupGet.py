@@ -38,7 +38,7 @@ def set_parser():
 def download_report(group, result, accession, temp_file):
     search_url = utils.get_group_search_query(group, result, accession)
     response = utils.get_report_from_portal(search_url)
-    f = open(temp_file, 'w')
+    f = open(temp_file, 'wb')
     for line in response:
         f.write(line)
     f.flush()
@@ -46,10 +46,10 @@ def download_report(group, result, accession, temp_file):
 
 def download_data(group, data_accession, format, group_dir, fetch_wgs, fetch_meta, fetch_index):
     if group == utils.WGS:
-        print 'fetching ' + data_accession[:6]
+        print ('fetching ' + data_accession[:6])
         sequenceGet.download_wgs(group_dir, data_accession[:6], format)
     else:
-        print 'fetching ' + data_accession
+        print ('fetching ' + data_accession)
         if group == utils.ASSEMBLY:
             assemblyGet.download_assembly(group_dir, data_accession, format, fetch_wgs, True)
         elif group in [utils.READ, utils.ANALYSIS]:
@@ -70,7 +70,7 @@ def download_data_group(group, accession, format, group_dir, fetch_wgs, fetch_me
     os.remove(temp_file)
 
 def download_sequence_group(accession, format, study_dir):
-    print 'Downloading sequences'
+    print('Downloading sequences')
     update_accs = []
     dest_file = os.path.join(study_dir, utils.get_filename(accession + '_sequences', format))
     #sequence update
@@ -124,12 +124,12 @@ if __name__ == '__main__':
     fetch_index = args.index
 
     if not utils.is_available(accession):
-        print 'Study/sample does not exist or is not available for accession provided'
-        print 'If you believe that it should be, please contact datasubs@ebi.ac.uk for assistance'
+        print ('Study/sample does not exist or is not available for accession provided')
+        print ('If you believe that it should be, please contact datasubs@ebi.ac.uk for assistance')
         sys.exit(1)
 
     if not utils.is_study(accession) and not utils.is_sample(accession):
-        print 'Error: Invalid accession. Only sample and study/project accessions supported'
+        print ('Error: Invalid accession. Only sample and study/project accessions supported')
         sys.exit(1)
 
     if format is None:
@@ -138,15 +138,15 @@ if __name__ == '__main__':
         else:
             format = utils.EMBL_FORMAT
     elif not utils.group_format_allowed(group, format):
-        print 'Illegal group and format combination provided.  Allowed:'
-        print 'sequence, assembly and wgs groups: embl and fasta formats'
-        print 'read group: submitted, fastq and sra formats'
-        print 'analysis group: submitted format only'
+        print ('Illegal group and format combination provided.  Allowed:')
+        print ('sequence, assembly and wgs groups: embl and fasta formats')
+        print ('read group: submitted, fastq and sra formats')
+        print ('analysis group: submitted format only')
         sys.exit(1)
 
     try:
         download_group(accession, group, format, dest_dir, fetch_wgs, fetch_meta, fetch_index)
-        print 'Download completed'
+        print ('Download completed')
     except Exception:
         utils.print_error()
         sys.exit(1)

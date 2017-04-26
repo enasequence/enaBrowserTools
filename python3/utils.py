@@ -5,13 +5,14 @@
 import base64
 import re
 import os
+import ssl
 import subprocess
-import urllib
-import urllib2
+import urllib.request as urlrequest
 import xml.etree.ElementTree as ElementTree
 
-ANON_USER = 'anon'
-ANON_PWD = 'anon'
+from http.client import HTTPSConnection
+
+ANON_AUTH = b'anon:anon'
 
 SUPPRESSED = 'suppressed'
 PUBLIC = 'public'
@@ -87,12 +88,6 @@ study_pattern_2 = re.compile('^PRJ[EDN][AB][0-9]+$')
 sample_pattern_1 = re.compile('^SAM[ND][0-9]{7}$')
 sample_pattern_2 = re.compile('^SAMEA[0-9]{6,}$')
 sample_pattern_3 = re.compile('^[EDS]RS[0-9]{6,7}$')
-
-def is_available(accession):
-    url = get_record_url(accession, XML_FORMAT)
-    response = urllib2.urlopen(url)
-    record = ElementTree.parse(response).getroot()
-    return not 'entry is not found' in record.text
 
 def is_sequence(accession):
     return sequence_pattern_1.match(accession) or sequence_pattern_2.match(accession) \
@@ -178,6 +173,12 @@ def get_record_url(accession, format):
         return VIEW_URL_BASE + accession + FASTA_DISPLAY
     return None
 
+def is_available(accession):
+    url = get_record_url(accession, XML_FORMAT)
+    response = urlrequest.urlopen(url)
+    record = ElementTree.parse(response).getroot()
+    return not 'entry is not found' in record.text
+
 def get_filename(base_name, format):
     if format == XML_FORMAT:
         return base_name + XML_EXT
@@ -194,7 +195,7 @@ def get_destination_file(dest_dir, accession, format):
     return None
 
 def download_single_record(url, dest_file):
-    urllib.urlretrieve(url, dest_file)
+    urlrequest.urlretrieve(url, dest_file)
 
 def download_record(dest_dir, accession, format):
     try:
@@ -207,10 +208,10 @@ def download_record(dest_dir, accession, format):
 
 def append_record(url, dest_file):
     try:
-        response = urllib2.urlopen(url)
-        f = open(dest_file, 'a')
+        response = urlrequest.urlopen(url)
+        f = open(dest_file, 'ab')
         for line in response:
-            f.write(line)
+            chars = f.write(line)
         f.flush()
         f.close()
         return True
@@ -221,7 +222,7 @@ def get_ftp_file(ftp_url, dest_dir):
     try:
         filename = ftp_url.split('/')[-1]
         dest_file = os.path.join(dest_dir, filename)
-        urllib.urlretrieve(ftp_url, dest_file)
+        urlrequest.urlretrieve(ftp_url, dest_file)
         return True
     except Exception:
         return False
@@ -229,15 +230,18 @@ def get_ftp_file(ftp_url, dest_dir):
 def get_md5(filepath):
     p = subprocess.Popen(['md5', filepath], stdout=subprocess.PIPE)
     output, error = p.communicate()
-    return output.split('=')[-1].strip()
+    return output.decode().split('=')[-1].strip()
 
 def get_ftp_file_with_md5_check(ftp_url, dest_dir, md5):
     try:
         filename = ftp_url.split('/')[-1]
         dest_file = os.path.join(dest_dir, filename)
-        urllib.urlretrieve(ftp_url, dest_file)
-        if md5 != get_md5(dest_file):
-            print 'MD5 mismatch for downloaded file ' + filepath + '. Deleting file'
+        urlrequest.urlretrieve(ftp_url, dest_file)
+        generated_md5 = get_md5(dest_file)
+        if md5 != generated_md5:
+            print ('MD5 mismatch for downloaded file ' + filepath + '. Deleting file')
+            print ('generated md5', generated_md5)
+            print ('expected md5', md5)
             os.remove(dest_file)
             return False
         return True
@@ -254,15 +258,17 @@ def get_wgs_ftp_url(wgs_set, status, format):
         return base_url + WGS_MASTER_EXT
 
 def get_report_from_portal(url):
-    request = urllib2.Request(url)
-    request.add_header('Authorization', b'Basic ' + base64.b64encode(ANON_USER + b':' + ANON_PWD))
-    return urllib2.urlopen(request)
+    userAndPass = base64.b64encode(ANON_AUTH).decode("ascii")
+    headers = { 'Authorization' : 'Basic %s' %  userAndPass }
+    request = urlrequest.Request(url, headers=headers)
+    gcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
+    return urlrequest.urlopen(request, context=gcontext)
 
 def download_report_from_portal(url, dest_file):
     response = get_report_from_portal(url)
-    f = open(dest_file, 'w')
+    f = open(dest_file, 'wb')
     for line in response:
-        f.write(line)
+        chars = f.write(line)
     f.flush()
     f.close()
 
@@ -353,5 +359,5 @@ def get_experiment_search_query(run_accession):
         + '&result=read_run&fields=experiment_accession&limit=0'
 
 def print_error():
-    print 'Something unexpected went wrong please try again.'
-    print 'If problem persists, please contact datasubs@ebi.ac.uk for assistance.'
+    print ('Something unexpected went wrong please try again.')
+    print ('If problem persists, please contact datasubs@ebi.ac.uk for assistance.')

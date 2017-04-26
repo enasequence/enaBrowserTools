@@ -1,0 +1,5 @@
+#!/bin/bash
+
+dir=`dirname "$0"`
+
+python ${dir}/analysisGet.py "$@"
