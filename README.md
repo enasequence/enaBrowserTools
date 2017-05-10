@@ -40,7 +40,7 @@ There are two main tools for downloading data from ENA:  enaDataGet and enaGroup
 
 ## enaDataGet
 
-This tool will download all data for a given sequence, assembly, read or analysis accession or WGS prefix (LLLLVV, eg CDHE01).  Usage of this tool is described below.  Note that unless a destination directory is provided, the data will we downloaded to the directory from which you run the command.
+This tool will download all data for a given sequence, assembly, read or analysis accession or WGS prefix (LLLLVV, eg CDHE01).  Usage of this tool is described below.  Note that unless a destination directory is provided, the data will be downloaded to the directory from which you run the command.
 
 ```
 usage: enaDataGet [-h] [-f {embl,fasta,submitted,fastq,sra}] [-d DEST] [-w]
@@ -78,7 +78,7 @@ To simplify the download of data, we also offer the component tools separately: 
 
 ## enaGroupGet
 
-This tool will allow you to download all data of a particular group (sequence, WGS, assembly, read or analysis) for a given sample or study accession. Usage of this tool is described below.  Note that unless a destination directory is provided, the data will we downloaded to the directory from which you run the command.
+This tool will allow you to download all data of a particular group (sequence, WGS, assembly, read or analysis) for a given sample or study accession. Usage of this tool is described below.  You will get a new directory using the provided accession as the directory name, and all data will be downloaded here.  Note that unless a destination directory is provided, this group directory will be created in the directory from which you run the command.  
 
 ```
 usage: enaGroupGet [-h] [-g {sequence,wgs,assembly,read,analysis}]
