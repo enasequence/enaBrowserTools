@@ -31,6 +31,8 @@ def set_parser():
     parser.add_argument('-i', '--index', action='store_true',
                         help="""Download CRAM index files with submitted CRAM files, if any (default is false).
                             This flag is ignored for fastq and sra format options. """)
+    parser.add_argument('-a', '--aspera', action='store_true',
+                        help='Use the aspera command line client to download, instead of FTP (default is false).')
     parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.0')
     return parser
 
@@ -45,6 +47,7 @@ if __name__ == '__main__':
     fetch_wgs = args.wgs
     fetch_meta = args.meta
     fetch_index = args.index
+    aspera = args.aspera
 
     try:
         if utils.is_wgs_set(accession):
@@ -61,11 +64,11 @@ if __name__ == '__main__':
         elif utils.is_analysis(accession):
             if format is not None:
                 readGet.check_read_format(format)
-            readGet.download_files(accession, format, dest_dir, fetch_index, fetch_meta)
+            readGet.download_files(accession, format, dest_dir, fetch_index, fetch_meta, aspera)
         elif utils.is_run(accession) or utils.is_experiment(accession):
             if format is not None:
                 readGet.check_read_format(format)
-            readGet.download_files(accession, format, dest_dir, fetch_index, fetch_meta)
+            readGet.download_files(accession, format, dest_dir, fetch_index, fetch_meta, aspera)
         elif utils.is_assembly(accession):
             if format is not None:
                 assemblyGet.check_format(format)

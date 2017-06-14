@@ -73,6 +73,17 @@ FASTQ_MD5_FIELD = 'fastq_md5'
 SUBMITTED_MD5_FIELD = 'submitted_md5'
 SRA_MD5_FIELD = 'sra_md5'
 INDEX_MD5_FIELD = None
+FASTQ_ASPERA_FIELD = 'fastq_aspera'
+SUBMITTED_ASPERA_FIELD = 'submitted_aspera'
+SRA_ASPERA_FIELD = 'sra_aspera'
+INDEX_ASPERA_FIELD = 'cram_index_aspera'
+
+ASPERA_BIN = 'ascp' # ascp binary
+ASPERA_LICENCE = '/path/to/aspera_dsa.openssh' # ascp licence file
+ASPERA_OPTIONS = '' # set any extra aspera options
+ASPERA_SPEED = '100M' # set aspera download speed
+
+MD5_BIN = 'md5sum' # can be 'md5' on some systems
 
 sequence_pattern_1 = re.compile('^[A-Z]{1}[0-9]{5}(\.[0-9]+)?$')
 sequence_pattern_2 = re.compile('^[A-Z]{2}[0-9]{6}(\.[0-9]+)?$')
@@ -194,14 +205,17 @@ def get_destination_file(dest_dir, accession, format):
         return os.path.join(dest_dir, filename)
     return None
 
-def download_single_record(url, dest_file):
-    urlrequest.urlretrieve(url, dest_file)
+def download_single_record(url, dest_file, aspera):
+    if aspera:
+        asperaretrieve(url, os.getcwd(), dest_file)
+    else:
+        urlrequest.urlretrieve(url, dest_file)
 
-def download_record(dest_dir, accession, format):
+def download_record(dest_dir, accession, format, aspera):
     try:
         dest_file = get_destination_file(dest_dir, accession, format)
         url = get_record_url(accession, format)
-        download_single_record(url, dest_file)
+        download_single_record(url, dest_file, aspera)
         return True
     except Exception:
         return False
@@ -227,10 +241,20 @@ def get_ftp_file(ftp_url, dest_dir):
     except Exception:
         return False
 
+def get_aspera_file(aspera_url, dest_dir):
+    try:
+        filename = aspera_url.split('/')[-1]
+        dest_file = os.path.join(dest_dir, filename)
+        asperaretrieve(aspera_url, dest_dir, dest_file)
+        return True
+    except Exception:
+        return False
+
 def get_md5(filepath):
-    p = subprocess.Popen(['md5', filepath], stdout=subprocess.PIPE)
+    print ('Checksumming ', filepath)
+    p = subprocess.Popen([MD5_BIN, filepath], stdout=subprocess.PIPE)
     output, error = p.communicate()
-    return output.decode().split('=')[-1].strip()
+    return re.split(r'\s|=', output.decode())[0].strip()
 
 def get_ftp_file_with_md5_check(ftp_url, dest_dir, md5):
     try:
@@ -244,6 +268,44 @@ def get_ftp_file_with_md5_check(ftp_url, dest_dir, md5):
             print ('expected md5', md5)
             os.remove(dest_file)
             return False
+        return True
+    except Exception:
+        return False
+
+def get_aspera_file_with_md5_check(aspera_url, dest_dir, md5):
+    try:
+        filename = aspera_url.split('/')[-1]
+        dest_file = os.path.join(dest_dir, filename)
+        success = asperaretrieve(aspera_url, dest_dir, dest_file)
+        if success:
+            generated_md5 = get_md5(dest_file)
+            if md5 != generated_md5:
+                print ('MD5 mismatch for downloaded file ' + filepath + '. Deleting file')
+                print ('generated md5', generated_md5)
+                print ('expected md5', md5)
+                os.remove(dest_file)
+                return False
+            return True
+        return False
+    except Exception:
+        return False
+
+def asperaretrieve(url, dest_dir, dest_file):
+    try:
+        logdir=os.path.abspath(os.path.join(dest_dir, "logs"))
+        create_dir(logdir)
+        aspera_line="{bin} -QT -L {logs} -l {speed} {aspera} -i {licence} era-fasp@{file} {outdir}"
+        aspera_line=aspera_line.format(
+            bin=ASPERA_BIN,
+            outdir=dest_dir,
+            logs=logdir,
+            file=url,
+            aspera=ASPERA_OPTIONS,
+            licence=ASPERA_LICENCE,
+            speed=ASPERA_SPEED,
+        )
+        print(aspera_line)
+        subprocess.call(aspera_line, shell=True) # this blocks so we're fine to wait and return True
         return True
     except Exception:
         return False
@@ -283,16 +345,31 @@ def get_accession_query(accession):
     query += '"'
     return query
 
-def get_file_fields(accession, format, fetch_index):
+def get_file_fields(accession, format, fetch_index, aspera):
+    if aspera:
+        fields = get_aspera_file_fields(accession, format, fetch_index)
+    else:
+        fields = 'fields='
+        if format == SRA_FORMAT:
+            fields += SRA_FIELD + ',' + SRA_MD5_FIELD
+        elif format == FASTQ_FORMAT:
+            fields += FASTQ_FIELD + ',' + FASTQ_MD5_FIELD
+        else:
+            fields += SUBMITTED_FIELD + ',' + SUBMITTED_MD5_FIELD
+            if fetch_index and not is_analysis(accession):
+                fields += ',' + INDEX_FIELD
+    return fields
+
+def get_aspera_file_fields(accession, format, fetch_index):
     fields = 'fields='
     if format == SRA_FORMAT:
-        fields += SRA_FIELD + ',' + SRA_MD5_FIELD
+        fields += SRA_ASPERA_FIELD + ',' + SRA_MD5_FIELD
     elif format == FASTQ_FORMAT:
-        fields += FASTQ_FIELD + ',' + FASTQ_MD5_FIELD
+        fields += FASTQ_ASPERA_FIELD + ',' + FASTQ_MD5_FIELD
     else:
-        fields += SUBMITTED_FIELD + ',' + SUBMITTED_MD5_FIELD
+        fields += SUBMITTED_ASPERA_FIELD + ',' + SUBMITTED_MD5_FIELD
         if fetch_index and not is_analysis(accession):
-            fields += ',' + INDEX_FIELD
+            fields += ',' + INDEX_ASPERA_FIELD
     return fields
 
 def get_result(accession):
@@ -301,9 +378,9 @@ def get_result(accession):
     else:  # is_analysis(accession)
         return ANALYSIS_RESULT
 
-def get_file_search_query(accession, format, fetch_index):
+def get_file_search_query(accession, format, fetch_index, aspera):
     return PORTAL_SEARCH_BASE + get_accession_query(accession) + '&' \
-        + get_result(accession) + '&' + get_file_fields(accession, format, fetch_index) + '&limit=0'
+        + get_result(accession) + '&' + get_file_fields(accession, format, fetch_index, aspera) + '&limit=0'
 
 def parse_file_search_result_line(line, accession, format, fetch_index):
     cols = line.split('\t')
