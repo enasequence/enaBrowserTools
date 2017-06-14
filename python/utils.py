@@ -82,7 +82,7 @@ ASPERA_LICENCE = '/path/to/aspera_dsa.openssh' # ascp licence file
 ASPERA_OPTIONS = '' # set any extra aspera options
 ASPERA_SPEED = '100M' # set aspera download speed
 
-MD5_BIN = 'md5sum' # can be 'md5' on some systems
+MD5_BIN = 'md5' # usually 'md5sum' on linux systems
 
 sequence_pattern_1 = re.compile('^[A-Z]{1}[0-9]{5}(\.[0-9]+)?$')
 sequence_pattern_2 = re.compile('^[A-Z]{2}[0-9]{6}(\.[0-9]+)?$')
