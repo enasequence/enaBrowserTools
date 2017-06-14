@@ -3,6 +3,7 @@
 #
 
 import base64
+import ftplib
 import re
 import os
 import subprocess
@@ -55,6 +56,7 @@ SEQUENCE_UPDATE_ID='sequence_update'
 SEQUENCE_RELEASE_ID='sequence_release'
 
 WGS_FTP_BASE = 'ftp://ftp.ebi.ac.uk/pub/databases/ena/wgs'
+WGS_FTP_DIR = 'pub/databases/ena/wgs'
 
 PORTAL_SEARCH_BASE = 'http://www.ebi.ac.uk/ena/portal/api/search?'
 RUN_RESULT = 'result=read_run'
@@ -78,6 +80,9 @@ sequence_pattern_2 = re.compile('^[A-Z]{2}[0-9]{6}(\.[0-9]+)?$')
 sequence_pattern_3 = re.compile('^[A-Z]{4}[0-9]{8,9}(\.[0-9]+)?$')
 coding_pattern = re.compile('^[A-Z]{3}[0-9]{5}(\.[0-9]+)?$')
 wgs_prefix_pattern = re.compile('^[A-Z]{4}[0-9]{2}$')
+wgs_master_pattern = re.compile('^[A-Z]{4}[0-9]{2}[0]{6}$')
+unversion_wgs_prefix_pattern = re.compile('^[A-Z]{4}$')
+unversion_wgs_master_pattern = re.compile('^[A-Z]{4}[0]{8}$')
 run_pattern = re.compile('^[EDS]RR[0-9]{6,7}$')
 experiment_pattern = re.compile('^[EDS]RX[0-9]{6,7}$')
 analysis_pattern = re.compile('^[EDS]RZ[0-9]{6,7}$')
@@ -102,7 +107,14 @@ def is_coding(accession):
     return coding_pattern.match(accession)
 
 def is_wgs_set(accession):
-    return wgs_prefix_pattern.match(accession)
+    return wgs_prefix_pattern.match(accession) \
+        or wgs_master_pattern.match(accession) \
+        or unversion_wgs_prefix_pattern.match(accession) \
+        or unversion_wgs_master_pattern.match(accession)
+
+def is_unversioned_wgs_set(accession):
+    return unversion_wgs_prefix_pattern.match(accession) \
+        or unversion_wgs_master_pattern.match(accession)
 
 def is_run(accession):
     return run_pattern.match(accession)
@@ -244,14 +256,32 @@ def get_ftp_file_with_md5_check(ftp_url, dest_dir, md5):
     except Exception:
         return False
 
+def get_wgs_file_ext(format):
+    if format == EMBL_FORMAT:
+        return WGS_EMBL_EXT
+    elif format == FASTA_FORMAT:
+        return WGS_FASTA_EXT
+    elif format == MASTER_FORMAT:
+        return WGS_MASTER_EXT
+
 def get_wgs_ftp_url(wgs_set, status, format):
     base_url = WGS_FTP_BASE + '/' + status + '/' + wgs_set[:2].lower() + '/' + wgs_set
-    if format == EMBL_FORMAT:
-        return base_url + WGS_EMBL_EXT
-    elif format == FASTA_FORMAT:
-        return base_url + WGS_FASTA_EXT
-    elif format == MASTER_FORMAT:
-        return base_url + WGS_MASTER_EXT
+    return base_url + get_wgs_file_ext(format)
+
+def get_nonversioned_wgs_ftp_url(wgs_set, status, format):
+    ftp_url = 'ftp.ebi.ac.uk'
+    base_dir = WGS_FTP_DIR + '/' + status + '/' + wgs_set[:2].lower()
+    base_url = WGS_FTP_BASE + '/' + status + '/' + wgs_set[:2].lower()
+    ftp = ftplib.FTP(ftp_url)
+    ftp.login()
+    ftp.cwd(base_dir)
+    supp = ftp.nlst()
+    ftp.close()
+    files = [f for f in supp if f.startswith(wgs_set) and f.endswith(get_wgs_file_ext(format))]
+    if len(files) == 0:
+        return None
+    else:
+        return base_url + '/' + max(files)
 
 def get_report_from_portal(url):
     request = urllib2.Request(url)

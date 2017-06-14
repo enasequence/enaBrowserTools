@@ -32,7 +32,7 @@ def set_parser():
     parser.add_argument('-i', '--index', action='store_true',
                         help="""Download CRAM index files with submitted CRAM files, if any (default is false).
                             This flag is ignored for fastq and sra format options. """)
-    parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.0')
+    parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.1')
     return parser
 
 def download_report(group, result, accession, temp_file):
@@ -146,7 +146,7 @@ if __name__ == '__main__':
 
     try:
         download_group(accession, group, format, dest_dir, fetch_wgs, fetch_meta, fetch_index)
-        print 'Download completed'
+        print 'Completed'
     except Exception:
         utils.print_error()
         sys.exit(1)
