@@ -32,6 +32,8 @@ def set_parser():
     parser.add_argument('-i', '--index', action='store_true',
                         help="""Download CRAM index files with submitted CRAM files, if any (default is false).
                             This flag is ignored for fastq and sra format options. """)
+    parser.add_argument('-a', '--aspera', action='store_true',
+                        help='Use the aspera command line client to download, instead of FTP (default is false).')
     parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.0')
     return parser
 
@@ -44,18 +46,22 @@ def download_report(group, result, accession, temp_file):
     f.flush()
     f.close()
 
-def download_data(group, data_accession, format, group_dir, fetch_wgs, fetch_meta, fetch_index):
+def download_data(group, data_accession, format, group_dir, fetch_wgs, fetch_meta, fetch_index, aspera):
     if group == utils.WGS:
-        print 'fetching ' + data_accession[:6]
+        print 'Fetching ' + data_accession[:6]
+        if aspera:
+            print 'Aspera not supported for WGS data. Using FTP...'
         sequenceGet.download_wgs(group_dir, data_accession[:6], format)
     else:
-        print 'fetching ' + data_accession
+        print 'Fetching ' + data_accession
         if group == utils.ASSEMBLY:
+            if aspera:
+                print 'Aspera not supported for assembly data. Using FTP...'
             assemblyGet.download_assembly(group_dir, data_accession, format, fetch_wgs, True)
         elif group in [utils.READ, utils.ANALYSIS]:
-            readGet.download_files(data_accession, format, group_dir, fetch_index, fetch_meta)
+            readGet.download_files(data_accession, format, group_dir, fetch_index, fetch_meta, aspera)
 
-def download_data_group(group, accession, format, group_dir, fetch_wgs, fetch_meta, fetch_index):
+def download_data_group(group, accession, format, group_dir, fetch_wgs, fetch_meta, fetch_index, aspera):
     temp_file = os.path.join(group_dir, accession + '_temp.txt')
     download_report(group, utils.get_group_result(group), accession, temp_file)
     f = open(temp_file)
@@ -65,7 +71,7 @@ def download_data_group(group, accession, format, group_dir, fetch_wgs, fetch_me
             header = False
             continue
         data_accession = line.strip()
-        download_data(group, data_accession, format, group_dir, fetch_wgs, fetch_meta, fetch_index)
+        download_data(group, data_accession, format, group_dir, fetch_wgs, fetch_meta, fetch_index, aspera)
     f.close()
     os.remove(temp_file)
 
@@ -102,13 +108,15 @@ def download_sequence_group(accession, format, study_dir):
     f.close()
     os.remove(temp_file)
 
-def download_group(accession, group, format, dest_dir, fetch_wgs, fetch_meta, fetch_index):
+def download_group(accession, group, format, dest_dir, fetch_wgs, fetch_meta, fetch_index, aspera):
     group_dir = os.path.join(dest_dir, accession)
     utils.create_dir(group_dir)
     if group == utils.SEQUENCE:
+        if aspera:
+            print 'Aspera not supported for sequence downloads. Using FTP...'
         download_sequence_group(accession, format, group_dir)
     else:
-        download_data_group(group, accession, format, group_dir, fetch_wgs, fetch_meta, fetch_index)
+        download_data_group(group, accession, format, group_dir, fetch_wgs, fetch_meta, fetch_index, aspera)
 
 
 if __name__ == '__main__':
@@ -122,6 +130,7 @@ if __name__ == '__main__':
     fetch_wgs = args.wgs
     fetch_meta = args.meta
     fetch_index = args.index
+    aspera = args.aspera
 
     if not utils.is_available(accession):
         print 'Study/sample does not exist or is not available for accession provided'
@@ -137,7 +146,7 @@ if __name__ == '__main__':
             format = utils.SUBMITTED_FORMAT
         else:
             format = utils.EMBL_FORMAT
-    elif not utils.group_format_allowed(group, format):
+    elif not utils.group_format_allowed(group, format, aspera):
         print 'Illegal group and format combination provided.  Allowed:'
         print 'sequence, assembly and wgs groups: embl and fasta formats'
         print 'read group: submitted, fastq and sra formats'
@@ -145,7 +154,7 @@ if __name__ == '__main__':
         sys.exit(1)
 
     try:
-        download_group(accession, group, format, dest_dir, fetch_wgs, fetch_meta, fetch_index)
+        download_group(accession, group, format, dest_dir, fetch_wgs, fetch_meta, fetch_index, aspera)
         print 'Download completed'
     except Exception:
         utils.print_error()

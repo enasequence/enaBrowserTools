@@ -1,5 +1,5 @@
 #
-# runGet.py
+# readGet.py
 #
 
 import os
@@ -9,7 +9,7 @@ import argparse
 import utils
 
 def set_parser():
-    parser = argparse.ArgumentParser(prog='runGet',
+    parser = argparse.ArgumentParser(prog='readGet',
                             description='Download sequence data for a given INSDC run/experiment accession')
     parser.add_argument('accession', help='INSDC run/experiment accession to fetch')
     parser.add_argument('-f', '--format', default='submitted', choices=['submitted', 'fastq', 'sra'],
@@ -38,7 +38,7 @@ def check_analysis_format(format):
         sys.exit(1)
 
 def download_file_with_md5_check(file_url, dest_dir, md5, aspera):
-    print ('downloading file ', file_url)
+    print ('Downloading file with md5 check', file_url)
     if aspera:
         success = utils.get_aspera_file_with_md5_check(file_url, dest_dir, md5)
     else:
@@ -49,7 +49,7 @@ def download_file_with_md5_check(file_url, dest_dir, md5, aspera):
         print ('Failed to download file')
 
 def download_file(file_url, dest_dir, aspera):
-    print ('downloading file', file_url)
+    print ('Downloading file', file_url)
     if aspera:
         success = utils.get_aspera_file(file_url, dest_dir)
     else:
@@ -118,7 +118,6 @@ def download_files(accession, format, dest_dir, fetch_index, fetch_meta, aspera)
         for index_file in indexlist:
             if index_file != '':
                 download_file(index_file, target_dir, aspera)
-
 
 if __name__ == '__main__':
     parser = set_parser()

@@ -79,7 +79,8 @@ SRA_ASPERA_FIELD = 'sra_aspera'
 INDEX_ASPERA_FIELD = 'cram_index_aspera'
 
 ASPERA_BIN = 'ascp' # ascp binary
-ASPERA_LICENCE = '/path/to/aspera_dsa.openssh' # ascp licence file
+ASPERA_PRIVATE_KEY = '/path/to/aspera_dsa.openssh' # ascp private key file
+ASPERA_LICENSE = 'aspera-license' # ascp license file
 ASPERA_OPTIONS = '' # set any extra aspera options
 ASPERA_SPEED = '100M' # set aspera download speed
 
@@ -160,18 +161,24 @@ def get_accession_type(accession):
         return SEQUENCE
     return None
 
-def accession_format_allowed(accession, format):
+def accession_format_allowed(accession, format, aspera):
     if is_analysis(accession):
         return format == SUBMITTED_FORMAT
     if is_run(accession) or is_experiment(accession):
-        return format in [SUBMITTED_FORMAT, FASTQ_FORMAT, SRA_FIELD]
+        if aspera:
+            return format in [SUBMITTED_FORMAT, FASTQ_FORMAT, SRA_ASPERA_FIELD]
+        else:
+            return format in [SUBMITTED_FORMAT, FASTQ_FORMAT, SRA_FIELD]
     return format in [EMBL_FORMAT, FASTA_FORMAT]
 
-def group_format_allowed(group, format):
+def group_format_allowed(group, format, aspera):
     if group == ANALYSIS:
         return format == SUBMITTED_FORMAT
     if group == READ:
-        return format in [SUBMITTED_FORMAT, FASTQ_FORMAT, SRA_FIELD]
+        if aspera:
+            return format in [SUBMITTED_FORMAT, FASTQ_FORMAT, SRA_ASPERA_FIELD]
+        else:
+            return format in [SUBMITTED_FORMAT, FASTQ_FORMAT, SRA_FIELD]
     return format in [EMBL_FORMAT, FASTA_FORMAT]
 
 # assumption is that accession and format have already been vetted before this method is called
@@ -207,7 +214,7 @@ def get_destination_file(dest_dir, accession, format):
 
 def download_single_record(url, dest_file, aspera):
     if aspera:
-        asperaretrieve(url, os.getcwd(), dest_file)
+        asperaretrieve(url, os.dirname(dest_file), dest_file)
     else:
         urlrequest.urlretrieve(url, dest_file)
 
@@ -217,7 +224,8 @@ def download_record(dest_dir, accession, format, aspera):
         url = get_record_url(accession, format)
         download_single_record(url, dest_file, aspera)
         return True
-    except Exception:
+    except Exception as e:
+        print ("Error downloading read record: {0}".format(e))
         return False
 
 def append_record(url, dest_file):
@@ -238,7 +246,8 @@ def get_ftp_file(ftp_url, dest_dir):
         dest_file = os.path.join(dest_dir, filename)
         urlrequest.urlretrieve(ftp_url, dest_file)
         return True
-    except Exception:
+    except Exception as e:
+        print ("Error with FTP transfer: {0}".format(e))
         return False
 
 def get_aspera_file(aspera_url, dest_dir):
@@ -248,6 +257,7 @@ def get_aspera_file(aspera_url, dest_dir):
         asperaretrieve(aspera_url, dest_dir, dest_file)
         return True
     except Exception:
+        print ("Error with FTP transfer: {0}".format(e))
         return False
 
 def get_md5(filepath):
@@ -269,7 +279,8 @@ def get_ftp_file_with_md5_check(ftp_url, dest_dir, md5):
             os.remove(dest_file)
             return False
         return True
-    except Exception:
+    except Exception as e:
+        print ("Error with FTP transfer: {0}".format(e))
         return False
 
 def get_aspera_file_with_md5_check(aspera_url, dest_dir, md5):
@@ -287,27 +298,31 @@ def get_aspera_file_with_md5_check(aspera_url, dest_dir, md5):
                 return False
             return True
         return False
-    except Exception:
+    except Exception as e:
+        print ("Error with Aspera transfer: {0}".format(e))
         return False
 
 def asperaretrieve(url, dest_dir, dest_file):
     try:
+        if not os.path.exists(ASPERA_BIN) or not os.path.exists(ASPERA_PRIVATE_KEY) or not os.path.exists(ASPERA_LICENSE): raise FileNotFoundError('Aspera not available. Check your ascp binary path is specified correctly, that the aspera-license file exists, and your private key file is specified')
         logdir=os.path.abspath(os.path.join(dest_dir, "logs"))
+        print ('Creating', logdir)
         create_dir(logdir)
-        aspera_line="{bin} -QT -L {logs} -l {speed} {aspera} -i {licence} era-fasp@{file} {outdir}"
+        aspera_line="{bin} -QT -L {logs} -l {speed} {aspera} -i {key} era-fasp@{file} {outdir}"  
         aspera_line=aspera_line.format(
             bin=ASPERA_BIN,
             outdir=dest_dir,
             logs=logdir,
             file=url,
             aspera=ASPERA_OPTIONS,
-            licence=ASPERA_LICENCE,
+            key=ASPERA_PRIVATE_KEY,
             speed=ASPERA_SPEED,
         )
         print(aspera_line)
         subprocess.call(aspera_line, shell=True) # this blocks so we're fine to wait and return True
         return True
-    except Exception:
+    except Exception as e:
+        print ("Error with Aspera transfer: {0}".format(e))
         return False
 
 def get_wgs_ftp_url(wgs_set, status, format):

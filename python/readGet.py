@@ -1,5 +1,5 @@
 #
-# runGet.py
+# readGet.py
 #
 
 import os
@@ -38,7 +38,7 @@ def check_analysis_format(format):
         sys.exit(1)
 
 def download_file_with_md5_check(file_url, dest_dir, md5, aspera):
-    print ('Downloading file with md5 check:', file_url)
+    print 'Downloading file with md5 check:' + file_url
     success=False
     if aspera:
         success = utils.get_aspera_file_with_md5_check(file_url, dest_dir, md5)
@@ -47,10 +47,10 @@ def download_file_with_md5_check(file_url, dest_dir, md5, aspera):
         if not success:
             success = utils.get_ftp_file_with_md5_check('ftp://' + file_url, dest_dir, md5)
     if not success:
-        print ('Failed to download file')
+        print 'Failed to download file'
 
 def download_file(file_url, dest_dir, aspera):
-    print ('Downloading file:', file_url)
+    print 'Downloading file:' + file_url
     success=False
     if aspera:
         success = utils.get_aspera_file(file_url, dest_dir)
@@ -59,7 +59,7 @@ def download_file(file_url, dest_dir, aspera):
         if not success:
             success = utils.get_ftp_file('ftp://' + file_url, dest_dir)
     if not success:
-        print ('Failed to download file')
+        print 'Failed to download file'
 
 def download_meta(accession, dest_dir):
     utils.download_record(dest_dir, accession, utils.XML_FORMAT)

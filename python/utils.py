@@ -78,7 +78,8 @@ SRA_ASPERA_FIELD = 'sra_aspera'
 INDEX_ASPERA_FIELD = 'cram_index_aspera'
 
 ASPERA_BIN = 'ascp' # ascp binary
-ASPERA_LICENCE = '/path/to/aspera_dsa.openssh' # ascp licence file
+ASPERA_PRIVATE_KEY = '/path/to/aspera_dsa.openssh' # ascp private key file
+ASPERA_LICENSE = 'aspera-license' # ascp license file
 ASPERA_OPTIONS = '' # set any extra aspera options
 ASPERA_SPEED = '100M' # set aspera download speed
 
@@ -165,18 +166,24 @@ def get_accession_type(accession):
         return SEQUENCE
     return None
 
-def accession_format_allowed(accession, format):
+def accession_format_allowed(accession, format, aspera):
     if is_analysis(accession):
         return format == SUBMITTED_FORMAT
     if is_run(accession) or is_experiment(accession):
-        return format in [SUBMITTED_FORMAT, FASTQ_FORMAT, SRA_FIELD]
+        if aspera:
+            return format in [SUBMITTED_FORMAT, FASTQ_FORMAT, SRA_ASPERA_FIELD]
+        else:
+            return format in [SUBMITTED_FORMAT, FASTQ_FORMAT, SRA_FIELD]
     return format in [EMBL_FORMAT, FASTA_FORMAT]
 
-def group_format_allowed(group, format):
+def group_format_allowed(group, format, aspera):
     if group == ANALYSIS:
         return format == SUBMITTED_FORMAT
     if group == READ:
-        return format in [SUBMITTED_FORMAT, FASTQ_FORMAT, SRA_FIELD]
+        if aspera:
+            return format in [SUBMITTED_FORMAT, FASTQ_FORMAT, SRA_ASPERA_FIELD]
+        else:
+            return format in [SUBMITTED_FORMAT, FASTQ_FORMAT, SRA_FIELD]
     return format in [EMBL_FORMAT, FASTA_FORMAT]
 
 # assumption is that accession and format have already been vetted before this method is called
@@ -287,14 +294,14 @@ def asperaretrieve(url, dest_dir, dest_file):
     try:
         logdir=os.path.abspath(os.path.join(dest_dir, "logs"))
         create_dir(logdir)
-        aspera_line="{bin} -QT -L {logs} -l {speed} {aspera} -i {licence} era-fasp@{file} {outdir}"
+        aspera_line="{bin} -QT -L {logs} -l {speed} {aspera} -i {key} era-fasp@{file} {outdir}"
         aspera_line=aspera_line.format(
             bin=ASPERA_BIN,
             outdir=dest_dir,
             logs=logdir,
             file=url,
             aspera=ASPERA_OPTIONS,
-            licence=ASPERA_LICENCE,
+            key=ASPERA_PRIVATE_KEY,
             speed=ASPERA_SPEED,
         )
         print aspera_line
