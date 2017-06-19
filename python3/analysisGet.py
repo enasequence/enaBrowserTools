@@ -16,7 +16,9 @@ def set_parser():
                         help='Destination directory (default is current running directory)')
     parser.add_argument('-m', '--meta', action='store_true',
                         help='Download analysis XML in addition to data files (default is false)')
-    parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.1')
+    parser.add_argument('-a', '--aspera', action='store_true',
+                        help='Use the aspera command line client to download, instead of FTP (default is false).')
+    parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.2')
     return parser
 
 
@@ -27,6 +29,7 @@ if __name__ == '__main__':
     accession = args.accession
     dest_dir = args.dest
     fetch_meta = args.meta
+    aspera = args.aspera
 
     if not utils.is_analysis(accession):
         print ('Error: Invalid accession. An analysis accession must be provided')
@@ -37,7 +40,7 @@ if __name__ == '__main__':
         sys.exit(1)
 
     try:
-        readGet.download_files(accession, utils.SUBMITTED_FORMAT, dest_dir, False, fetch_meta)
+        readGet.download_files(accession, utils.SUBMITTED_FORMAT, dest_dir, False, fetch_meta, aspera)
         print ('Completed')
     except Exception:
         utils.print_error()

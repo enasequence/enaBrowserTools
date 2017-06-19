@@ -26,7 +26,7 @@ def set_parser():
                         help='Destination directory (default is current running directory)')
     parser.add_argument('-w', '--wgs', action='store_true',
                         help='Download WGS set if available (default is false)')
-    parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.1')
+    parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.2')
     return parser
 
 def check_format(format):

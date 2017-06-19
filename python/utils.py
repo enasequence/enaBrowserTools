@@ -4,6 +4,7 @@
 
 import base64
 import ftplib
+import hashlib
 import re
 import os
 import subprocess
@@ -266,10 +267,11 @@ def get_aspera_file(aspera_url, dest_dir):
         return False
 
 def get_md5(filepath):
-    print 'Checksumming ' + filepath
-    p = subprocess.Popen([MD5_BIN, filepath], stdout=subprocess.PIPE)
-    output, error = p.communicate()
-    return re.split(r'\s|=', output)[0].strip()
+    hash_md5 = hashlib.md5()
+    with open(filepath, 'rb') as f:
+        for chunk in iter(lambda: f.read(4096), b""):
+            hash_md5.update(chunk)
+    return hash_md5.hexdigest()
 
 def get_ftp_file_with_md5_check(ftp_url, dest_dir, md5):
     try:

@@ -15,7 +15,7 @@ def set_parser():
                         help='File format required (default is embl); master format only available for WGS')
     parser.add_argument('-d', '--dest', default='.',
                         help='Destination directory (default is current running directory)')
-    parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.1')
+    parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.2')
     return parser
 
 def append_record(dest_file, accession, format):
