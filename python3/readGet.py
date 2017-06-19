@@ -1,5 +1,5 @@
 #
-# runGet.py
+# readGet.py
 #
 
 import os
@@ -9,7 +9,7 @@ import argparse
 import utils
 
 def set_parser():
-    parser = argparse.ArgumentParser(prog='runGet',
+    parser = argparse.ArgumentParser(prog='readGet',
                             description='Download sequence data for a given INSDC run/experiment accession')
     parser.add_argument('accession', help='INSDC run/experiment accession to fetch')
     parser.add_argument('-f', '--format', default='submitted', choices=['submitted', 'fastq', 'sra'],
@@ -21,7 +21,9 @@ def set_parser():
     parser.add_argument('-i', '--index', action='store_true',
                         help="""Download CRAM index files with submitted CRAM files, if any (default is false).
                             This flag is ignored for fastq and sra format options""")
-    parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.1')
+    parser.add_argument('-a', '--aspera', action='store_true',
+                        help='Use the aspera command line client to download, instead of FTP (default is false).')
+    parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.2')
     return parser
 
 def check_read_format(format):
@@ -35,19 +37,25 @@ def check_analysis_format(format):
         print ('Please select a valid format for this accession: ', utils.SUBMITTED_FORMAT)
         sys.exit(1)
 
-def download_file_with_md5_check(file_url, dest_dir, md5):
-    print ('downloading file ', file_url)
-    success = utils.get_ftp_file_with_md5_check(file_url, dest_dir, md5)
-    if not success:
-        success = utils.get_ftp_file_with_md5_check(file_url, dest_dir, md5)
+def download_file_with_md5_check(file_url, dest_dir, md5, aspera):
+    print ('Downloading file with md5 check', file_url)
+    if aspera:
+        success = utils.get_aspera_file_with_md5_check(file_url, dest_dir, md5)
+    else:
+        success = utils.get_ftp_file_with_md5_check('ftp://' + file_url, dest_dir, md5)
+        if not success:
+            success = utils.get_ftp_file_with_md5_check('ftp://' + file_url, dest_dir, md5)
     if not success:
         print ('Failed to download file')
 
-def download_file(file_url, dest_dir):
-    print ('downloading file', file_url)
-    success = utils.get_ftp_file(file_url, dest_dir)
-    if not success:
-        success = utils.get_ftp_file(file_url, dest_dir)
+def download_file(file_url, dest_dir, aspera):
+    print ('Downloading file', file_url)
+    if aspera:
+        success = utils.get_aspera_file(file_url, dest_dir)
+    else:
+        success = utils.get_ftp_file('ftp://' + file_url, dest_dir)
+        if not success:
+            success = utils.get_ftp_file('ftp://' + file_url, dest_dir)
     if not success:
         print ('Failed to download file')
 
@@ -66,7 +74,7 @@ def download_experiment_meta(run_accession, dest_dir):
         break
     download_meta(experiment_accession, dest_dir)
 
-def download_files(accession, format, dest_dir, fetch_index, fetch_meta):
+def download_files(accession, format, dest_dir, fetch_index, fetch_meta, aspera):
     if format is None:
         format = utils.SUBMITTED_FORMAT
     accession_dir = os.path.join(dest_dir, accession)
@@ -79,7 +87,7 @@ def download_files(accession, format, dest_dir, fetch_index, fetch_meta):
     if fetch_meta and utils.is_run(accession):
         download_experiment_meta(accession, accession_dir)
     # download data files
-    search_url = utils.get_file_search_query(accession, format, fetch_index)
+    search_url = utils.get_file_search_query(accession, format, fetch_index, aspera)
     temp_file = os.path.join(dest_dir, 'temp.txt')
     utils.download_report_from_portal(search_url, temp_file)
     f = open(temp_file)
@@ -106,11 +114,10 @@ def download_files(accession, format, dest_dir, fetch_index, fetch_meta):
             file_url = filelist[i]
             md5 = md5list[i]
             if file_url != '':
-                download_file_with_md5_check('ftp://' + file_url, target_dir, md5)
+                download_file_with_md5_check(file_url, target_dir, md5, aspera)
         for index_file in indexlist:
             if index_file != '':
-                download_file('ftp://' + index_file, target_dir)
-
+                download_file(index_file, target_dir, aspera)
 
 if __name__ == '__main__':
     parser = set_parser()
@@ -121,6 +128,7 @@ if __name__ == '__main__':
     dest_dir = args.dest
     fetch_meta = args.meta
     fetch_index = args.index
+    aspera = args.aspera
 
     if not utils.is_run(accession) and not utils.is_experiment(accession):
         print ('Error: Invalid accession. An INSDC run or experiment accession must be provided')
@@ -131,7 +139,7 @@ if __name__ == '__main__':
         sys.exit(1)
 
     try:
-        download_files(accession, format, dest_dir, fetch_index, fetch_meta)
+        download_files(accession, format, dest_dir, fetch_index, fetch_meta, aspera)
         print ('Completed')
     except Exception:
         utils.print_error()
