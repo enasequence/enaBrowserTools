@@ -33,7 +33,7 @@ def set_parser():
                             This flag is ignored for fastq and sra format options. """)
     parser.add_argument('-a', '--aspera', action='store_true',
                         help='Use the aspera command line client to download, instead of FTP (default is false).')
-    parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.0')
+    parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.2')
     return parser
 
 
@@ -76,7 +76,7 @@ if __name__ == '__main__':
         else:
             print 'Error: Invalid accession provided'
             sys.exit(1)
-        print 'Download completed'
+        print 'Completed'
     except Exception:
         utils.print_error()
         sys.exit(1)

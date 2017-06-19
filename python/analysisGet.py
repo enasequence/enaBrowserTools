@@ -16,7 +16,7 @@ def set_parser():
                         help='Destination directory (default is current running directory)')
     parser.add_argument('-m', '--meta', action='store_true',
                         help='Download analysis XML in addition to data files (default is false)')
-    parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.0')
+    parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.1')
     return parser
 
 
@@ -38,7 +38,7 @@ if __name__ == '__main__':
 
     try:
         readGet.download_files(accession, utils.SUBMITTED_FORMAT, dest_dir, False, fetch_meta)
-        print 'Download completed'
+        print 'Completed'
     except Exception:
         utils.print_error()
         sys.exit(1)
