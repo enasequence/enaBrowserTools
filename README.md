@@ -24,6 +24,8 @@ Download the latest release and extract it to the preferred location on our comp
 ```
 alias enaDataGet=INSTALLATION_DIR/enaBrowserTools/PYTHON_CHOICE/enaDataGet
 alias enaGroupGet=INSTALLATION_DIR/enaBrowserTools/PYTHON_CHOICE/enaGroupGet
+
+# optionally, the individual component tools
 alias sequenceGet=INSTALLATION_DIR/enaBrowserTools/PYTHON_CHOICE/sequenceGet
 alias assemblyGet=INSTALLATION_DIR/enaBrowserTools/PYTHON_CHOICE/assemblyGet
 alias readGet=INSTALLATION_DIR/enaBrowserTools/PYTHON_CHOICE/readGet
@@ -44,7 +46,7 @@ This tool will download all data for a given sequence, assembly, read or analysi
 
 ```
 usage: enaDataGet [-h] [-f {embl,fasta,submitted,fastq,sra}] [-d DEST] [-w]
-                  [-m] [-i] [-v]
+                  [-m] [-i] [-a] [-v]
                   accession
 
 Download data for a given accession
@@ -71,6 +73,8 @@ optional arguments:
   -i, --index           Download CRAM index files with submitted CRAM files,
                         if any (default is false). This flag is ignored for
                         fastq and sra format options.
+  -a, --aspera          Use the aspera command line client to download,
+                        instead of FTP (default is false).
   -v, --version         show program's version number and exit
 ```
 
@@ -83,7 +87,7 @@ This tool will allow you to download all data of a particular group (sequence, W
 ```
 usage: enaGroupGet [-h] [-g {sequence,wgs,assembly,read,analysis}]
                    [-f {embl,fasta,submitted,fastq,sra}] [-d DEST] [-w] [-m]
-                   [-i] [-v]
+                   [-i] [-a] [-v]
                    accession
 
 Download data for a given study or sample
@@ -111,5 +115,7 @@ optional arguments:
   -i, --index           Download CRAM index files with submitted CRAM files,
                         if any (default is false). This flag is ignored for
                         fastq and sra format options.
+  -a, --aspera          Use the aspera command line client to download,
+                        instead of FTP (default is false).
   -v, --version         show program's version number and exit
 ```
