@@ -45,10 +45,10 @@ There are two main tools for downloading data from ENA:  enaDataGet and enaGroup
 This tool will download all data for a given sequence, assembly, read or analysis accession or WGS set.  Usage of this tool is described below.  Note that unless a destination directory is provided, the data will be downloaded to the directory from which you run the command.
 
 Accepted WGS set accession formats are:
-AAAK03
-AAAK03000000
-AAAK
-AAAK00000000
+- AAAK03
+- AAAK03000000
+- AAAK
+- AAAK00000000
 
 ```
 usage: enaDataGet [-h] [-f {embl,fasta,submitted,fastq,sra}] [-d DEST] [-w]
