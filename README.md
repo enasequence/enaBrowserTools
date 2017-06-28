@@ -19,7 +19,7 @@ To run these scripts you will need to have Python installed.  You can download e
 
 ## Installing and running the scripts
 
-Download the latest release and extract it to the preferred location on our computer. You will now have the enaBrowserTools folder, containing both the python 2 and 3 option scripts.  If you are using a Unix/Linux or Mac computer, we suggest you add the following aliases to your .bashrc or .bash_profile file. Where INSTALLATION_DIR is the location where you have saved the enaBrowserTools to and PYTHON_CHOICE will depend on whether you are using the Python 2 or Python 3 scripts.
+Download the [latest release](https://github.com/enasequence/enaBrowserTools/releases/tag/v1.2) and extract it to the preferred location on your computer. You will now have the enaBrowserTools folder, containing both the python 2 and 3 option scripts.  If you are using a Unix/Linux or Mac computer, we suggest you add the following aliases to your .bashrc or .bash_profile file. Where INSTALLATION_DIR is the location where you have saved the enaBrowserTools to and PYTHON_CHOICE will depend on whether you are using the Python 2 or Python 3 scripts.
 
 ```
 alias enaDataGet=INSTALLATION_DIR/enaBrowserTools/PYTHON_CHOICE/enaDataGet
@@ -34,7 +34,13 @@ alias analysisGet=INSTALLATION_DIR/enaBrowserTools/PYTHON_CHOICE/analysisGet
 
 This will allow you to run the tools from any location on your computer.
 
-We will aim to provide instructions and batch scripts for running these tools on Windows at a later date.
+You can run install and run these scripts on Windows as you would in Unix/Linux using [Cygwin](https://cygwin.com). If you have python installed on your Windows machine, you can run the python scripts directly without Cygwin. However the call is a bit more complicated. 
+
+For example, instead of calling ```enaDataGet``` 
+
+you would need to call ```python INSTALLATION_DIR/enaBrowserTools/PYTHON_CHOICE/enaDataGet.py```
+
+We will look more into the Windows equivalent of aliases to run batch files from the command line and hopefully be able to provide a better solution to Windows users shortly.
 
 # Command line
 
