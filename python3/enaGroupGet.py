@@ -36,7 +36,7 @@ def set_parser():
                         help='Use the aspera command line client to download, instead of FTP (default is false).')
     parser.add_argument('-t', '--subtree', action='store_true',
                         help='Include subordinate taxa (taxon subtree) when querying with NCBI tax ID (default is false)')
-    parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.2')
+    parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.3')
     return parser
 
 def download_report(group, result, accession, temp_file, subtree):
