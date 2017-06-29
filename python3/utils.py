@@ -242,13 +242,15 @@ def download_record(dest_dir, accession, format, aspera):
         return False
 
 def append_record(url, dest_file):
+
     try:
+
         response = urlrequest.urlopen(url)
-        f = open(dest_file, 'ab')
-        for line in response:
-            chars = f.write(line)
-        f.flush()
-        f.close()
+
+        with open(dest_file, 'ab') as f:
+            for line in response:
+                f.write(line)
+
         return True
     except Exception:
         return False
@@ -374,12 +376,12 @@ def get_report_from_portal(url):
     return urlrequest.urlopen(request, context=gcontext)
 
 def download_report_from_portal(url, dest_file):
+
     response = get_report_from_portal(url)
-    f = open(dest_file, 'wb')
-    for line in response:
-        chars = f.write(line)
-    f.flush()
-    f.close()
+
+    with open(dest_file, 'wb') as f:
+        for line in response:
+            f.write(line)
 
 def get_accession_query(accession):
     query = 'query="'

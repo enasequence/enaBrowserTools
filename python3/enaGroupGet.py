@@ -41,11 +41,10 @@ def download_report(group, result, accession, temp_file):
     search_url = utils.get_group_search_query(group, result, accession)
     print (search_url)
     response = utils.get_report_from_portal(search_url)
-    f = open(temp_file, 'wb')
-    for line in response:
-        f.write(line)
-    f.flush()
-    f.close()
+
+    with open(temp_file, 'wb') as f:
+        for line in response:
+            f.write(line)
 
 def download_data(group, data_accession, format, group_dir, fetch_wgs, fetch_meta, fetch_index, aspera):
     if group == utils.WGS:
