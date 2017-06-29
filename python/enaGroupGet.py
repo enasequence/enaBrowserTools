@@ -14,7 +14,7 @@ import utils
 def set_parser():
     parser = argparse.ArgumentParser(prog='enaGroupGet',
                                      description = 'Download data for a given study or sample')
-    parser.add_argument('accession', help='Study or sample accession to fetch data for')
+    parser.add_argument('accession', help='Study or sample accession or NCBI tax ID to fetch data for')
     parser.add_argument('-g', '--group', default='read',
                         choices=['sequence', 'wgs', 'assembly', 'read', 'analysis'],
                         help='Data group to be downloaded for this study/sample (default is read)')
@@ -34,11 +34,13 @@ def set_parser():
                             This flag is ignored for fastq and sra format options. """)
     parser.add_argument('-a', '--aspera', action='store_true',
                         help='Use the aspera command line client to download, instead of FTP (default is false).')
+    parser.add_argument('-t', '--subtree', action='store_true',
+                        help='Include subordinate taxa (taxon subtree) when querying with NCBI tax ID (default is false)')
     parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.2')
     return parser
 
-def download_report(group, result, accession, temp_file):
-    search_url = utils.get_group_search_query(group, result, accession)
+def download_report(group, result, accession, temp_file, subtree):
+    search_url = utils.get_group_search_query(group, result, accession, subtree)
     response = utils.get_report_from_portal(search_url)
     f = open(temp_file, 'w')
     for line in response:
@@ -61,9 +63,9 @@ def download_data(group, data_accession, format, group_dir, fetch_wgs, fetch_met
         elif group in [utils.READ, utils.ANALYSIS]:
             readGet.download_files(data_accession, format, group_dir, fetch_index, fetch_meta, aspera)
 
-def download_data_group(group, accession, format, group_dir, fetch_wgs, fetch_meta, fetch_index, aspera):
+def download_data_group(group, accession, format, group_dir, fetch_wgs, fetch_meta, fetch_index, aspera, subtree):
     temp_file = os.path.join(group_dir, accession + '_temp.txt')
-    download_report(group, utils.get_group_result(group), accession, temp_file)
+    download_report(group, utils.get_group_result(group), accession, temp_file, subtree)
     f = open(temp_file)
     header = True
     for line in f:
@@ -75,13 +77,13 @@ def download_data_group(group, accession, format, group_dir, fetch_wgs, fetch_me
     f.close()
     os.remove(temp_file)
 
-def download_sequence_group(accession, format, study_dir):
+def download_sequence_group(accession, format, group_dir, subtree):
     print 'Downloading sequences'
     update_accs = []
-    dest_file = os.path.join(study_dir, utils.get_filename(accession + '_sequences', format))
+    dest_file = os.path.join(group_dir, utils.get_filename(accession + '_sequences', format))
     #sequence update
-    temp_file = os.path.join(study_dir, 'temp.txt')
-    download_report(utils.SEQUENCE, utils.SEQUENCE_UPDATE_RESULT, accession, temp_file)
+    temp_file = os.path.join(group_dir, 'temp.txt')
+    download_report(utils.SEQUENCE, utils.SEQUENCE_UPDATE_RESULT, accession, temp_file, subtree)
     f = open(temp_file)
     header = True
     for line in f:
@@ -94,8 +96,8 @@ def download_sequence_group(accession, format, study_dir):
     f.close()
     os.remove(temp_file)
     #sequence release
-    temp_file = os.path.join(study_dir, 'temp.txt')
-    download_report(utils.SEQUENCE, utils.SEQUENCE_RELEASE_RESULT, accession, temp_file)
+    temp_file = os.path.join(group_dir, 'temp.txt')
+    download_report(utils.SEQUENCE, utils.SEQUENCE_RELEASE_RESULT, accession, temp_file, subtree)
     f = open(temp_file)
     header = True
     for line in f:
@@ -108,15 +110,15 @@ def download_sequence_group(accession, format, study_dir):
     f.close()
     os.remove(temp_file)
 
-def download_group(accession, group, format, dest_dir, fetch_wgs, fetch_meta, fetch_index, aspera):
+def download_group(accession, group, format, dest_dir, fetch_wgs, fetch_meta, fetch_index, aspera, subtree):
     group_dir = os.path.join(dest_dir, accession)
     utils.create_dir(group_dir)
     if group == utils.SEQUENCE:
         if aspera:
             print 'Aspera not supported for sequence downloads. Using FTP...'
-        download_sequence_group(accession, format, group_dir)
+        download_sequence_group(accession, format, group_dir, subtree)
     else:
-        download_data_group(group, accession, format, group_dir, fetch_wgs, fetch_meta, fetch_index, aspera)
+        download_data_group(group, accession, format, group_dir, fetch_wgs, fetch_meta, fetch_index, aspera, subtree)
 
 
 if __name__ == '__main__':
@@ -131,14 +133,17 @@ if __name__ == '__main__':
     fetch_meta = args.meta
     fetch_index = args.index
     aspera = args.aspera
+    subtree = args.subtree
 
     if not utils.is_available(accession):
-        print 'Study/sample does not exist or is not available for accession provided'
-        print 'If you believe that it should be, please contact datasubs@ebi.ac.uk for assistance'
+        sys.stderr.write('ERROR: Study/sample does not exist or is not available for accession provided.\n')
+        sys.stderr.write('If you believe that it should be, please contact datasubs@ebi.ac.uk for assistance.\n')
         sys.exit(1)
 
-    if not utils.is_study(accession) and not utils.is_sample(accession):
-        print 'Error: Invalid accession. Only sample and study/project accessions supported'
+    if not utils.is_study(accession) and not utils.is_sample(accession) and not utils.is_taxid(accession):
+        sys.stderr.write(
+         'ERROR: Invalid accession. Only sample and study/project accessions or NCBI tax ID supported\n'
+        )
         sys.exit(1)
 
     if format is None:
@@ -147,14 +152,18 @@ if __name__ == '__main__':
         else:
             format = utils.EMBL_FORMAT
     elif not utils.group_format_allowed(group, format, aspera):
-        print 'Illegal group and format combination provided.  Allowed:'
-        print 'sequence, assembly and wgs groups: embl and fasta formats'
-        print 'read group: submitted, fastq and sra formats'
-        print 'analysis group: submitted format only'
+        sys.stderr.write('ERROR: Illegal group and format combination provided.  Allowed:\n')
+        sys.stderr.write('sequence, assembly and wgs groups: embl and fasta formats\n')
+        sys.stderr.write('read group: submitted, fastq and sra formats\n')
+        sys.stderr.write('analysis group: submitted format only\n')
         sys.exit(1)
 
     try:
-        download_group(accession, group, format, dest_dir, fetch_wgs, fetch_meta, fetch_index, aspera)
+        # disable read and analysis retrieval for taxon until added in size calculation and user response
+        if utils.is_taxid(accession) and group in ['read', 'analysis']:
+            print 'Sorry, tax ID retrieval not yet supported for read and analysis'
+            sys.exit(1)
+        download_group(accession, group, format, dest_dir, fetch_wgs, fetch_meta, fetch_index, aspera, subtree)
         print 'Completed'
     except Exception:
         utils.print_error()

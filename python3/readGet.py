@@ -8,56 +8,39 @@ import argparse
 
 import utils
 
-def set_parser():
-    parser = argparse.ArgumentParser(prog='readGet',
-                            description='Download sequence data for a given INSDC run/experiment accession')
-    parser.add_argument('accession', help='INSDC run/experiment accession to fetch')
-    parser.add_argument('-f', '--format', default='submitted', choices=['submitted', 'fastq', 'sra'],
-                        help='File format required (default is submitted)')
-    parser.add_argument('-d', '--dest', default='.',
-                        help='Destination directory (default is current running directory)')
-    parser.add_argument('-m', '--meta', action='store_true',
-                        help='Download run and experiment XML in addition to data files (default is false)')
-    parser.add_argument('-i', '--index', action='store_true',
-                        help="""Download CRAM index files with submitted CRAM files, if any (default is false).
-                            This flag is ignored for fastq and sra format options""")
-    parser.add_argument('-a', '--aspera', action='store_true',
-                        help='Use the aspera command line client to download, instead of FTP (default is false).')
-    parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.2')
-    return parser
-
 def check_read_format(format):
     if format not in [utils.SUBMITTED_FORMAT, utils.FASTQ_FORMAT, utils.SRA_FORMAT]:
-        print ('Please select a valid format for this accession: ', \
+        sys.stderr.write('ERROR: Invalid format. Please select a valid format for this accession: {0}\n'.format(
             [utils.SUBMITTED_FORMAT, utils.FASTQ_FORMAT, utils.SRA_FORMAT])
+        )
         sys.exit(1)
 
 def check_analysis_format(format):
     if format != utils.SUBMITTED_FORMAT:
-        print ('Please select a valid format for this accession: ', utils.SUBMITTED_FORMAT)
+        sys.stderr.write(
+            'ERROR: Invalid format. Please select a valid format for this accession: {0}\n'.format(
+            utils.SUBMITTED_FORMAT)
+        )
         sys.exit(1)
 
-def download_file_with_md5_check(file_url, dest_dir, md5, aspera):
-    print ('Downloading file with md5 check', file_url)
+def attempt_file_download(file_url, dest_dir, md5, aspera):
+    if md5 is not None:
+        print('Downloading file with md5 check:' + file_url)
+        if aspera:
+            return utils.get_aspera_file_with_md5_check(file_url, dest_dir, md5)
+        else:
+            return utils.get_ftp_file_with_md5_check('ftp://' + file_url, dest_dir, md5)
+    print('Downloading file:' + file_url)
     if aspera:
-        success = utils.get_aspera_file_with_md5_check(file_url, dest_dir, md5)
-    else:
-        success = utils.get_ftp_file_with_md5_check('ftp://' + file_url, dest_dir, md5)
-        if not success:
-            success = utils.get_ftp_file_with_md5_check('ftp://' + file_url, dest_dir, md5)
-    if not success:
-        print ('Failed to download file')
+        return utils.get_aspera_file(file_url, dest_dir)
+    return utils.get_ftp_file('ftp://' + file_url, dest_dir)
 
-def download_file(file_url, dest_dir, aspera):
-    print ('Downloading file', file_url)
-    if aspera:
-        success = utils.get_aspera_file(file_url, dest_dir)
-    else:
-        success = utils.get_ftp_file('ftp://' + file_url, dest_dir)
-        if not success:
-            success = utils.get_ftp_file('ftp://' + file_url, dest_dir)
+def download_file(file_url, dest_dir, md5, aspera):
+    success = attempt_file_download(file_url, dest_dir, md5, aspera)
     if not success:
-        print ('Failed to download file')
+        success = attempt_file_download(file_url, dest_dir, md5, aspera)
+    if not success:
+        print('Failed to download file after two attempts')
 
 def download_meta(accession, dest_dir):
     utils.download_record(dest_dir, accession, utils.XML_FORMAT)
@@ -83,7 +66,6 @@ def download_files(accession, format, dest_dir, fetch_index, fetch_meta, aspera)
     is_experiment = utils.is_experiment(accession)
     if fetch_meta and is_experiment:
         download_meta(accession, accession_dir)
-    # TODO download experiment xml for run accession
     if fetch_meta and utils.is_run(accession):
         download_experiment_meta(accession, accession_dir)
     # download data files
@@ -114,33 +96,10 @@ def download_files(accession, format, dest_dir, fetch_index, fetch_meta, aspera)
             file_url = filelist[i]
             md5 = md5list[i]
             if file_url != '':
-                download_file_with_md5_check(file_url, target_dir, md5, aspera)
+                download_file(file_url, target_dir, md5, aspera)
         for index_file in indexlist:
             if index_file != '':
-                download_file(index_file, target_dir, aspera)
-
-if __name__ == '__main__':
-    parser = set_parser()
-    args = parser.parse_args()
-
-    accession = args.accession
-    format = args.format
-    dest_dir = args.dest
-    fetch_meta = args.meta
-    fetch_index = args.index
-    aspera = args.aspera
-
-    if not utils.is_run(accession) and not utils.is_experiment(accession):
-        print ('Error: Invalid accession. An INSDC run or experiment accession must be provided')
-        sys.exit(1)
-
-    if not utils.is_available(accession):
-        print ('Record does not exist or is not available for accession provided')
-        sys.exit(1)
-
-    try:
-        download_files(accession, format, dest_dir, fetch_index, fetch_meta, aspera)
-        print ('Completed')
-    except Exception:
-        utils.print_error()
-        sys.exit(1)
+                download_file(index_file, target_dir, None, aspera)
+    if utils.is_empty_dir(target_dir):
+        print('Deleting directory ' + os.path.basename(target_dir))
+        os.rmdir(target_dir)

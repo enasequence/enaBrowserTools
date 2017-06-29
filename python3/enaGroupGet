@@ -1,5 +1,7 @@
 #!/bin/bash
 
-dir=`dirname "$0"`
+pushd `dirname $0` > /dev/null
+SCRIPTPATH=`pwd -P`
+popd > /dev/null
 
-python ${dir}/enaGroupGet.py "$@"
+python3 ${SCRIPTPATH}/enaGroupGet.py "$@"
