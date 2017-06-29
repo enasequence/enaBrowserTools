@@ -13,6 +13,12 @@ import urllib
 import urllib2
 import xml.etree.ElementTree as ElementTree
 
+ASPERA_BIN = 'ascp' # ascp binary
+ASPERA_PRIVATE_KEY = '/path/to/aspera_dsa.openssh' # ascp private key file
+ASPERA_LICENSE = 'aspera-license' # ascp license file
+ASPERA_OPTIONS = '' # set any extra aspera options
+ASPERA_SPEED = '100M' # set aspera download speed
+
 ANON_USER = 'anon'
 ANON_PWD = 'anon'
 
@@ -81,14 +87,6 @@ FASTQ_ASPERA_FIELD = 'fastq_aspera'
 SUBMITTED_ASPERA_FIELD = 'submitted_aspera'
 SRA_ASPERA_FIELD = 'sra_aspera'
 INDEX_ASPERA_FIELD = 'cram_index_aspera'
-
-ASPERA_BIN = 'ascp' # ascp binary
-ASPERA_PRIVATE_KEY = '/path/to/aspera_dsa.openssh' # ascp private key file
-ASPERA_LICENSE = 'aspera-license' # ascp license file
-ASPERA_OPTIONS = '' # set any extra aspera options
-ASPERA_SPEED = '100M' # set aspera download speed
-
-MD5_BIN = 'md5' # usually 'md5sum' on linux systems
 
 sequence_pattern_1 = re.compile('^[A-Z]{1}[0-9]{5}(\.[0-9]+)?$')
 sequence_pattern_2 = re.compile('^[A-Z]{2}[0-9]{6}(\.[0-9]+)?$')

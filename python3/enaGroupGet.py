@@ -14,10 +14,10 @@ import utils
 def set_parser():
     parser = argparse.ArgumentParser(prog='enaGroupGet',
                                      description = 'Download data for a given study or sample')
-    parser.add_argument('accession', help='Study or sample accession to fetch data for')
+    parser.add_argument('accession', help='Study or sample accession or NCBI tax ID to fetch data for')
     parser.add_argument('-g', '--group', default='read',
                         choices=['sequence', 'wgs', 'assembly', 'read', 'analysis'],
-                        help='Data group to be downloaded for this study/sample (default is read)')
+                        help='Data group to be downloaded for this study/sample/taxon (default is read)')
     parser.add_argument('-f', '--format', default=None,
                         choices=['embl', 'fasta', 'submitted', 'fastq', 'sra'],
                         help="""File format required. Format requested must be permitted for

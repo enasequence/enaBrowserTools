@@ -17,7 +17,7 @@ def set_parser():
     parser.add_argument('accession', help='Study or sample accession or NCBI tax ID to fetch data for')
     parser.add_argument('-g', '--group', default='read',
                         choices=['sequence', 'wgs', 'assembly', 'read', 'analysis'],
-                        help='Data group to be downloaded for this study/sample (default is read)')
+                        help='Data group to be downloaded for this study/sample/taxon (default is read)')
     parser.add_argument('-f', '--format', default=None,
                         choices=['embl', 'fasta', 'submitted', 'fastq', 'sra'],
                         help="""File format required. Format requested must be permitted for
