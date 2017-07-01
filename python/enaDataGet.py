@@ -33,7 +33,7 @@ def set_parser():
                             This flag is ignored for fastq and sra format options. """)
     parser.add_argument('-a', '--aspera', action='store_true',
                         help='Use the aspera command line client to download, instead of FTP (default is false).')
-    parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.2')
+    parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.3')
     return parser
 
 
@@ -55,7 +55,7 @@ if __name__ == '__main__':
                 sequenceGet.check_format(format)
             sequenceGet.download_wgs(dest_dir, accession, format)
         elif not utils.is_available(accession):
-            print 'Record does not exist or is not available for accession provided'
+            sys.stderr.write('ERROR: Record does not exist or is not available for accession provided\n')
             sys.exit(1)
         elif utils.is_sequence(accession):
             if format is not None:
@@ -74,7 +74,7 @@ if __name__ == '__main__':
                 assemblyGet.check_format(format)
             assemblyGet.download_assembly(dest_dir, accession, format, fetch_wgs)
         else:
-            print 'Error: Invalid accession provided'
+            sys.stderr.write('ERROR: Invalid accession provided\n')
             sys.exit(1)
         print 'Completed'
     except Exception:

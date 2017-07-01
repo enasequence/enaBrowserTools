@@ -9,10 +9,17 @@ import re
 import os
 import ssl
 import subprocess
+import sys
 import urllib.request as urlrequest
 import xml.etree.ElementTree as ElementTree
 
 from http.client import HTTPSConnection
+
+ASPERA_BIN = 'ascp' # ascp binary
+ASPERA_PRIVATE_KEY = '/path/to/aspera_dsa.openssh' # ascp private key file
+ASPERA_LICENSE = 'aspera-license' # ascp license file
+ASPERA_OPTIONS = '' # set any extra aspera options
+ASPERA_SPEED = '100M' # set aspera download speed
 
 ANON_AUTH = b'anon:anon'
 
@@ -44,6 +51,7 @@ ASSEMBLY = 'assembly'
 STUDY = 'study'
 READ = 'read'
 SAMPLE = 'sample'
+TAXON = 'taxon'
 
 VIEW_URL_BASE = 'http://www.ebi.ac.uk/ena/data/view/'
 XML_DISPLAY = '&display=xml'
@@ -80,14 +88,6 @@ FASTQ_ASPERA_FIELD = 'fastq_aspera'
 SUBMITTED_ASPERA_FIELD = 'submitted_aspera'
 SRA_ASPERA_FIELD = 'sra_aspera'
 INDEX_ASPERA_FIELD = 'cram_index_aspera'
-
-ASPERA_BIN = 'ascp' # ascp binary
-ASPERA_PRIVATE_KEY = '/path/to/aspera_dsa.openssh' # ascp private key file
-ASPERA_LICENSE = 'aspera-license' # ascp license file
-ASPERA_OPTIONS = '' # set any extra aspera options
-ASPERA_SPEED = '100M' # set aspera download speed
-
-MD5_BIN = 'md5' # usually 'md5sum' on linux systems
 
 sequence_pattern_1 = re.compile('^[A-Z]{1}[0-9]{5}(\.[0-9]+)?$')
 sequence_pattern_2 = re.compile('^[A-Z]{2}[0-9]{6}(\.[0-9]+)?$')
@@ -155,6 +155,13 @@ def is_primary_sample(accession):
 def is_secondary_sample(accession):
     return sample_pattern_3.match(accession)
 
+def is_taxid(accession):
+    try:
+        int(accession)
+        return True
+    except ValueError:
+        return False
+
 def get_accession_type(accession):
     if is_study(accession):
         return STUDY
@@ -172,6 +179,8 @@ def get_accession_type(accession):
         return CODING
     elif is_sequence(accession):
         return SEQUENCE
+    elif is_taxid(accession):
+        return TAXON
     return None
 
 def accession_format_allowed(accession, format, aspera):
@@ -205,7 +214,10 @@ def get_record_url(accession, format):
     return None
 
 def is_available(accession):
-    url = get_record_url(accession, XML_FORMAT)
+    if is_taxid(accession):
+        url = get_record_url('Taxon:{0}'.format(accession), XML_FORMAT)
+    else:
+        url = get_record_url(accession, XML_FORMAT)
     response = urlrequest.urlopen(url)
     record = ElementTree.parse(response).getroot()
     return not 'entry is not found' in record.text
@@ -282,21 +294,24 @@ def get_md5(filepath):
             hash_md5.update(chunk)
     return hash_md5.hexdigest()
 
+def check_md5(filepath, expected_md5):
+    generated_md5 = get_md5(filepath)
+    if expected_md5 != generated_md5:
+        print ('MD5 mismatch for downloaded file ' + filepath + '. Deleting file')
+        print ('generated md5', generated_md5)
+        print ('expected md5', expected_md5)
+        os.remove(filepath)
+        return False
+    return True
+
 def get_ftp_file_with_md5_check(ftp_url, dest_dir, md5):
     try:
         filename = ftp_url.split('/')[-1]
         dest_file = os.path.join(dest_dir, filename)
         urlrequest.urlretrieve(ftp_url, dest_file)
-        generated_md5 = get_md5(dest_file)
-        if md5 != generated_md5:
-            print ('MD5 mismatch for downloaded file ' + filepath + '. Deleting file')
-            print ('generated md5', generated_md5)
-            print ('expected md5', md5)
-            os.remove(dest_file)
-            return False
-        return True
+        return check_md5(dest_file, md5)
     except Exception as e:
-        print ("Error with FTP transfer: {0}".format(e))
+        sys.stderr.write("Error with FTP transfer: {0}\n".format(e))
         return False
 
 def get_aspera_file_with_md5_check(aspera_url, dest_dir, md5):
@@ -305,17 +320,10 @@ def get_aspera_file_with_md5_check(aspera_url, dest_dir, md5):
         dest_file = os.path.join(dest_dir, filename)
         success = asperaretrieve(aspera_url, dest_dir, dest_file)
         if success:
-            generated_md5 = get_md5(dest_file)
-            if md5 != generated_md5:
-                print ('MD5 mismatch for downloaded file ' + filepath + '. Deleting file')
-                print ('generated md5', generated_md5)
-                print ('expected md5', md5)
-                os.remove(dest_file)
-                return False
-            return True
+            return check_md5(dest_file, md5)
         return False
     except Exception as e:
-        print ("Error with Aspera transfer: {0}".format(e))
+        sys.stderr.write("Error with Aspera transfer: {0}\n".format(e))
         return False
 
 def asperaretrieve(url, dest_dir, dest_file):
@@ -338,7 +346,7 @@ def asperaretrieve(url, dest_dir, dest_file):
         subprocess.call(aspera_line, shell=True) # this blocks so we're fine to wait and return True
         return True
     except Exception as e:
-        print ("Error with Aspera transfer: {0}".format(e))
+        sys.stderr.write("Error with Aspera transfer: {0}\n".format(e))
         return False
 
 def get_wgs_file_ext(format):
@@ -386,11 +394,11 @@ def download_report_from_portal(url, dest_file):
 def get_accession_query(accession):
     query = 'query="'
     if is_run(accession):
-        query += 'run_accession="' + accession + '"'
+        query += 'run_accession="{0}"'.format(accession)
     elif is_experiment(accession):
-        query += 'experiment_accession="' + accession + '"'
+        query += 'experiment_accession="{0}"'.format(accession)
     elif is_analysis(accession):
-        query += 'analysis_accession="' + accession + '"'
+        query += 'analysis_accession="{0}"'.format(accession)
     query += '"'
     return query
 
@@ -433,6 +441,8 @@ def get_file_search_query(accession, format, fetch_index, aspera):
 
 def parse_file_search_result_line(line, accession, format, fetch_index):
     cols = line.split('\t')
+    if cols[1] == '':
+        return cols[0].strip(), [], [], []
     filelist = cols[1].strip().split(';')
     md5list = cols[2].strip().split(';')
     indexlist = []
@@ -444,16 +454,21 @@ def create_dir(dir_path):
     if not os.path.exists(dir_path):
         os.makedirs(dir_path)
 
-def get_group_query(accession):
+def get_group_query(accession, subtree):
     query='query='
     if is_primary_study(accession):
-        query += 'study_accession="' + accession + '"'
+        query += 'study_accession="{0}"'.format(accession)
     elif is_secondary_study(accession):
-        query += 'secondary_study_accession="' + accession + '"'
+        query += 'secondary_study_accession="{0}"'.format(accession)
     elif is_primary_sample(accession):
-        query += 'sample_accession="' + accession + '"'
+        query += 'sample_accession="{0}"'.format(accession)
     elif is_secondary_sample(accession):
-        query += 'secondary_sample_accession="' + accession + '"'
+        query += 'secondary_sample_accession="{0}"'.format(accession)
+    elif is_taxid(accession):
+        if subtree:
+            query += 'tax_tree({0})'.format(accession)
+        else:
+            query += 'tax_eq({0})'.format(accession)
     return query
 
 def get_group_fields(group):
@@ -476,14 +491,20 @@ def get_group_result(group):
     elif group == ASSEMBLY:
         return ASSEMBLY_RESULT
 
-def get_group_search_query(group, result, accession):
-    return PORTAL_SEARCH_BASE + get_group_query(accession) + '&' \
+def get_group_search_query(group, result, accession, subtree):
+    return PORTAL_SEARCH_BASE + get_group_query(accession, subtree) + '&' \
         + result + '&' + get_group_fields(group) + '&limit=0'
 
 def get_experiment_search_query(run_accession):
     return PORTAL_SEARCH_BASE + 'query=run_accession="' + run_accession + '"' \
         + '&result=read_run&fields=experiment_accession&limit=0'
 
+def is_empty_dir(target_dir):
+    for dirpath, dirnames, files in os.walk(target_dir):
+        if files:
+            return False
+    return True
+
 def print_error():
-    print ('Something unexpected went wrong please try again.')
-    print ('If problem persists, please contact datasubs@ebi.ac.uk for assistance.')
+    sys.stderr.write('ERROR: Something unexpected went wrong please try again.\n')
+    sys.stderr.write('If problem persists, please contact datasubs@ebi.ac.uk for assistance.\n')

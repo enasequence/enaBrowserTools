@@ -15,23 +15,11 @@ UNLOCALISED = 'unlocalised-scaffold'
 UNPLACED = 'unplaced-scaffold'
 PATCH = 'patch'
 
-def set_parser():
-    parser = argparse.ArgumentParser(prog='assemblyGet',
-                                     description='Download sequence data for a given assembly accession')
-    parser.add_argument('accession',
-                        help='INSDC assembly accession to fetch (will use latest version if no version given)')
-    parser.add_argument('-f', '--format', default='embl', choices=['embl', 'fasta'],
-                        help='File format required (default is embl)')
-    parser.add_argument('-d', '--dest', default='.',
-                        help='Destination directory (default is current running directory)')
-    parser.add_argument('-w', '--wgs', action='store_true',
-                        help='Download WGS set if available (default is false)')
-    parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.2')
-    return parser
-
 def check_format(format):
     if format not in [utils.EMBL_FORMAT, utils.FASTA_FORMAT]:
-        print 'Please select a valid format for this accession: ', [utils.EMBL_FORMAT, utils.FASTA_FORMAT]
+        sys.stderr.write(
+            'ERROR: Invalid format. Please select a valid format for this accession: {0}\n'.format([utils.EMBL_FORMAT, utils.FASTA_FORMAT])
+        )
         sys.exit(1)
 
 def get_sequence_report_url(record):
@@ -112,28 +100,3 @@ def download_assembly(dest_dir, accession, format, fetch_wgs, quiet=False):
     # parse sequence report and download sequences
     if has_sequence_report:
         download_sequences(sequence_report.split('/')[-1], assembly_dir, format, quiet)
-
-
-if __name__ == '__main__':
-    parser = set_parser()
-    args = parser.parse_args()
-
-    accession = args.accession
-    format = args.format
-    dest_dir = args.dest
-    fetch_wgs = args.wgs
-
-    if not utils.is_assembly(accession):
-        print 'Error: Invalid accession. An assembly accession (GCA_ prefix) must be provided'
-        sys.exit(1)
-
-    if not utils.is_available(accession):
-        print 'Record does not exist or is not available for accession provided'
-        sys.exit(1)
-
-    try:
-        download_assembly(dest_dir, accession, format, fetch_wgs)
-        print 'Completed'
-    except Exception:
-        utils.print_error()
-        sys.exit(1)
