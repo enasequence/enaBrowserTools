@@ -31,9 +31,9 @@ def set_parser():
     parser.add_argument('-i', '--index', action='store_true',
                         help="""Download CRAM index files with submitted CRAM files, if any (default is false).
                             This flag is ignored for fastq and sra format options. """)
-    parser.add_argument('-a', '--aspera', action='store_true',
-                        help='Use the aspera command line client to download, instead of FTP (default is false).')
-    parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.3')
+    parser.add_argument('-a', '--aspera', default=None,
+                        help='Use the aspera command line client to download, instead of FTP, with the provided settings file.')
+    parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.3.1')
     return parser
 
 
@@ -47,7 +47,12 @@ if __name__ == '__main__':
     fetch_wgs = args.wgs
     fetch_meta = args.meta
     fetch_index = args.index
-    aspera = args.aspera
+    aspera_settings = args.aspera
+
+    aspera = False
+    if aspera_settings is not None:
+        aspera = True
+        utils.set_aspera_variables(aspera_settings)
 
     try:
         if utils.is_wgs_set(accession):

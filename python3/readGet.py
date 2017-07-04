@@ -36,6 +36,8 @@ def attempt_file_download(file_url, dest_dir, md5, aspera):
     return utils.get_ftp_file('ftp://' + file_url, dest_dir)
 
 def download_file(file_url, dest_dir, md5, aspera):
+    if utils.file_exists(file_url, dest_dir, md5):
+        return
     success = attempt_file_download(file_url, dest_dir, md5, aspera)
     if not success:
         success = attempt_file_download(file_url, dest_dir, md5, aspera)

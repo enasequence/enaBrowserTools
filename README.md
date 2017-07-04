@@ -38,15 +38,23 @@ We will look more into the Windows equivalent of aliases to run batch files from
 
 ## Setting up for Aspera
 
-If you wish to use Aspera to download read or analysis files, you will need to edit the utils.py script. You will minimally need to specify the location of ascp and the licence file on your computer. All available aspera settings that can be modified are located at the top of utils.py:
+If you wish to use Aspera to download read or analysis files, you will need to use the aspera_settings.ini file.  Please save it to a static location on your local computer, and edit the file to include the location of your aspera binary (ASPERA_BIN) and the private key file (ASPERA_PRIVATE_KEY):
 
 ```
-ASPERA_BIN = 'ascp' # ascp binary
-ASPERA_PRIVATE_KEY = '/path/to/aspera_dsa.openssh' # ascp private key file
-ASPERA_LICENSE = 'aspera-license' # ascp license file
-ASPERA_OPTIONS = '' # set any extra aspera options
-ASPERA_SPEED = '100M' # set aspera download speed
+[aspera]
+ASPERA_BIN = /path/to/ascp
+ASPERA_PRIVATE_KEY = /path/to/aspera_dsa.openssh
+ASPERA_OPTIONS =
+ASPERA_SPEED = 100M
 ```
+
+You will need to provide a path to this file every time you chose to run aspera.
+
+```
+enaDataGet -f fastq -a /path/to/aspera_settings.ini ACCESSION
+```
+
+Note that if you don't save this file to a location outside of the enaBrowserTools directory, your settings will be wiped each time you update to a new release.
 
 # Command line
 
@@ -64,7 +72,7 @@ Accepted WGS set accession formats are:
 
 ```
 usage: enaDataGet [-h] [-f {embl,fasta,submitted,fastq,sra}] [-d DEST] [-w]
-                  [-m] [-i] [-a] [-v]
+                  [-m] [-i] [-a ASPERA] [-v]
                   accession
 
 Download data for a given accession
@@ -91,8 +99,9 @@ optional arguments:
   -i, --index           Download CRAM index files with submitted CRAM files,
                         if any (default is false). This flag is ignored for
                         fastq and sra format options.
-  -a, --aspera          Use the aspera command line client to download,
-                        instead of FTP (default is false).
+  -a ASPERA, --aspera ASPERA
+                        Use the aspera command line client to download,
+                        instead of FTP, with the provided settings file.
   -v, --version         show program's version number and exit
 ```
 
@@ -107,7 +116,7 @@ Usage of this tool is described below.  A new directory will be created using th
 ```
 usage: enaGroupGet [-h] [-g {sequence,wgs,assembly,read,analysis}]
                    [-f {embl,fasta,submitted,fastq,sra}] [-d DEST] [-w] [-m]
-                   [-i] [-a] [-t] [-v]
+                   [-i] [-a ASPERA] [-t] [-v]
                    accession
 
 Download data for a given study or sample
@@ -136,8 +145,9 @@ optional arguments:
   -i, --index           Download CRAM index files with submitted CRAM files,
                         if any (default is false). This flag is ignored for
                         fastq and sra format options.
-  -a, --aspera          Use the aspera command line client to download,
-                        instead of FTP (default is false).
+  -a ASPERA, --aspera ASPERA
+                        Use the aspera command line client to download,
+                        instead of FTP, with the provided settings file.
   -t, --subtree         Include subordinate taxa (taxon subtree) when querying
                         with NCBI tax ID (default is false)
   -v, --version         show program's version number and exit
@@ -147,4 +157,4 @@ optional arguments:
 
 For any problems, please contact datasubs@ebi.ac.uk with 'enaBrowserTools' in your subject line.
 
-We have had a couple of reports that the R2 FASTQ files are not always successfully downloading for paired runs. We have been unable to replicate this problem and have therefore exposed the error message to you should there be any download failure of read/analysis files via FTP or Aspera. If you get one of these errors, copy the error into your email to datasubs.
+We have had a couple of reports that the R2 FASTQ files are not always successfully downloading for paired runs. We have been unable to replicate this problem and have therefore exposed the error message to you should there be any download failure of read/analysis files via FTP or Aspera. If you get one of these errors, please copy the error into your email to datasubs.

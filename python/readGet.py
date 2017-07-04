@@ -37,6 +37,8 @@ def attempt_file_download(file_url, dest_dir, md5, aspera):
     return utils.get_ftp_file('ftp://' + file_url, dest_dir)
 
 def download_file(file_url, dest_dir, md5, aspera):
+    if utils.file_exists(file_url, dest_dir, md5):
+        return
     success = attempt_file_download(file_url, dest_dir, md5, aspera)
     if not success:
         success = attempt_file_download(file_url, dest_dir, md5, aspera)
@@ -101,6 +103,6 @@ def download_files(accession, format, dest_dir, fetch_index, fetch_meta, aspera)
         for index_file in indexlist:
             if index_file != '':
                 download_file(index_file, target_dir, None, aspera)
-    if utils.is_empty_dir(target_dir):
-        print 'Deleting directory ' + os.path.basename(target_dir)
-        os.rmdir(target_dir)
+        if utils.is_empty_dir(target_dir):
+            print 'Deleting directory ' + os.path.basename(target_dir)
+            os.rmdir(target_dir)

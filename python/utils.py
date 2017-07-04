@@ -13,9 +13,10 @@ import urllib
 import urllib2
 import xml.etree.ElementTree as ElementTree
 
+from ConfigParser import SafeConfigParser
+
 ASPERA_BIN = 'ascp' # ascp binary
 ASPERA_PRIVATE_KEY = '/path/to/aspera_dsa.openssh' # ascp private key file
-ASPERA_LICENSE = 'aspera-license' # ascp license file
 ASPERA_OPTIONS = '' # set any extra aspera options
 ASPERA_SPEED = '100M' # set aspera download speed
 
@@ -113,7 +114,7 @@ def is_available(accession):
         url = get_record_url(accession, XML_FORMAT)
     response = urllib2.urlopen(url)
     record = ElementTree.parse(response).getroot()
-    return not 'entry is not found' in record.text
+    return (not 'entry is not found' in record.text) and (len(record.getchildren()) > 0)
 
 def is_sequence(accession):
     return sequence_pattern_1.match(accession) or sequence_pattern_2.match(accession) \
@@ -295,6 +296,16 @@ def check_md5(filepath, expected_md5):
         return False
     return True
 
+def file_exists(file_url, dest_dir, md5):
+    filename = file_url.split('/')[-1]
+    local_file = os.path.join(dest_dir, filename)
+    if os.path.isfile(local_file):
+        generated_md5 = get_md5(local_file)
+        if generated_md5 == md5:
+            print '{0} already exists in local directory, skipping'.format(filename)
+            return True
+    return False
+
 def get_ftp_file_with_md5_check(ftp_url, dest_dir, md5):
     try:
         filename = ftp_url.split('/')[-1]
@@ -316,6 +327,23 @@ def get_aspera_file_with_md5_check(aspera_url, dest_dir, md5):
     except Exception as e:
         sys.stderr.write("Error with Aspera transfer: {0}\n".format(e))
         return False
+
+def set_aspera_variables(filepath):
+    try:
+        parser = SafeConfigParser()
+        parser.read(filepath)
+        global ASPERA_BIN
+        ASPERA_BIN = parser.get('aspera', 'ASPERA_BIN')
+        global ASPERA_PRIVATE_KEY
+        ASPERA_PRIVATE_KEY = parser.get('aspera', 'ASPERA_PRIVATE_KEY')
+        global ASPERA_SPEED
+        ASPERA_SPEED = parser.get('aspera', 'ASPERA_SPEED')
+        global ASPERA_OPTIONS
+        ASPERA_OPTIONS = parser.get('aspera', 'ASPERA_OPTIONS')
+    except Exception as e:
+        sys.stderr.write("ERROR: cannot read aspera settings from {0}\n".format(filepath))
+        sys.stderr.write("{0}\n".format(e))
+        sys.exit(1)
 
 def asperaretrieve(url, dest_dir, dest_file):
     try:

@@ -46,7 +46,7 @@ def download_unversioned_wgs(dest_dir, accession, format):
     if public_set_url is not None:
         utils.get_ftp_file(public_set_url, dest_dir)
     else:
-        supp_set_url = utils.get_nonversion_supp_wgs_ftp_url(prefix, format)
+        supp_set_url = utils.get_nonversioned_wgs_ftp_url(prefix, utils.SUPPRESSED, format)
         if supp_set_url is not None:
             utils.get_ftp_file(supp_set_url, dest_dir)
         else:
