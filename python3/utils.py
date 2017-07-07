@@ -358,7 +358,7 @@ def asperaretrieve(url, dest_dir, dest_file):
         logdir=os.path.abspath(os.path.join(dest_dir, "logs"))
         print ('Creating', logdir)
         create_dir(logdir)
-        aspera_line="{bin} -QT -L {logs} -l {speed} {aspera} -i {key} era-fasp@{file} {outdir}"
+        aspera_line="{bin} -QT -L {logs} -l {speed} -P33001 {aspera} -i {key} era-fasp@{file} {outdir}"
         aspera_line=aspera_line.format(
             bin=ASPERA_BIN,
             outdir=dest_dir,
