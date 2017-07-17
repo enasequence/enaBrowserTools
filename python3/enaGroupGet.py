@@ -48,22 +48,22 @@ def download_report(group, result, accession, temp_file, subtree):
     f.flush()
     f.close()
 
-def download_data(group, data_accession, format, group_dir, fetch_wgs, fetch_meta, fetch_index, aspera):
+def download_data(group, data_accession, output_format, group_dir, fetch_wgs, fetch_meta, fetch_index, aspera):
     if group == utils.WGS:
         print ('Fetching ' + data_accession[:6])
         if aspera:
             print ('Aspera not supported for WGS data. Using FTP...')
-        sequenceGet.download_wgs(group_dir, data_accession[:6], format)
+        sequenceGet.download_wgs(group_dir, data_accession[:6], output_format)
     else:
         print ('Fetching ' + data_accession)
         if group == utils.ASSEMBLY:
             if aspera:
                 print ('Aspera not supported for assembly data. Using FTP...')
-            assemblyGet.download_assembly(group_dir, data_accession, format, fetch_wgs, True)
+            assemblyGet.download_assembly(group_dir, data_accession, output_format, fetch_wgs, True)
         elif group in [utils.READ, utils.ANALYSIS]:
-            readGet.download_files(data_accession, format, group_dir, fetch_index, fetch_meta, aspera)
+            readGet.download_files(data_accession, output_format, group_dir, fetch_index, fetch_meta, aspera)
 
-def download_data_group(group, accession, format, group_dir, fetch_wgs, fetch_meta, fetch_index, aspera, subtree):
+def download_data_group(group, accession, output_format, group_dir, fetch_wgs, fetch_meta, fetch_index, aspera, subtree):
     temp_file = os.path.join(group_dir, accession + '_temp.txt')
     download_report(group, utils.get_group_result(group), accession, temp_file, subtree)
     f = open(temp_file)
@@ -73,14 +73,14 @@ def download_data_group(group, accession, format, group_dir, fetch_wgs, fetch_me
             header = False
             continue
         data_accession = line.strip()
-        download_data(group, data_accession, format, group_dir, fetch_wgs, fetch_meta, fetch_index, aspera)
+        download_data(group, data_accession, output_format, group_dir, fetch_wgs, fetch_meta, fetch_index, aspera)
     f.close()
     os.remove(temp_file)
 
-def download_sequence_group(accession, format, group_dir, subtree):
+def download_sequence_group(accession, output_format, group_dir, subtree):
     print('Downloading sequences')
     update_accs = []
-    dest_file = os.path.join(group_dir, utils.get_filename(accession + '_sequences', format))
+    dest_file = os.path.join(group_dir, utils.get_filename(accession + '_sequences', output_format))
     #sequence update
     temp_file = os.path.join(group_dir, 'temp.txt')
     download_report(utils.SEQUENCE, utils.SEQUENCE_UPDATE_RESULT, accession, temp_file, subtree)
@@ -92,7 +92,7 @@ def download_sequence_group(accession, format, group_dir, subtree):
             continue
         data_accession = line.strip()
         update_accs.append(data_accession)
-        sequenceGet.append_record(dest_file, data_accession, format)
+        sequenceGet.append_record(dest_file, data_accession, output_format)
     f.close()
     os.remove(temp_file)
     #sequence release
@@ -106,19 +106,19 @@ def download_sequence_group(accession, format, group_dir, subtree):
             continue
         data_accession = line.strip()
         if data_accession not in update_accs:
-            sequenceGet.append_record(dest_file, data_accession, format)
+            sequenceGet.append_record(dest_file, data_accession, output_format)
     f.close()
     os.remove(temp_file)
 
-def download_group(accession, group, format, dest_dir, fetch_wgs, fetch_meta, fetch_index, aspera, subtree):
+def download_group(accession, group, output_format, dest_dir, fetch_wgs, fetch_meta, fetch_index, aspera, subtree):
     group_dir = os.path.join(dest_dir, accession)
     utils.create_dir(group_dir)
     if group == utils.SEQUENCE:
         if aspera:
             print ('Aspera not supported for sequence downloads. Using FTP...')
-        download_sequence_group(accession, format, group_dir, subtree)
+        download_sequence_group(accession, output_format, group_dir, subtree)
     else:
-        download_data_group(group, accession, format, group_dir, fetch_wgs, fetch_meta, fetch_index, aspera, subtree)
+        download_data_group(group, accession, output_format, group_dir, fetch_wgs, fetch_meta, fetch_index, aspera, subtree)
 
 if __name__ == '__main__':
     parser = set_parser()
@@ -126,7 +126,7 @@ if __name__ == '__main__':
 
     accession = args.accession
     group = args.group
-    format = args.format
+    output_format = args.format
     dest_dir = args.dest
     fetch_wgs = args.wgs
     fetch_meta = args.meta
@@ -150,12 +150,12 @@ if __name__ == '__main__':
         )
         sys.exit(1)
 
-    if format is None:
+    if output_format is None:
         if group in (utils.READ, utils.ANALYSIS):
-            format = utils.SUBMITTED_FORMAT
+            output_format = utils.SUBMITTED_FORMAT
         else:
-            format = utils.EMBL_FORMAT
-    elif not utils.group_format_allowed(group, format, aspera):
+            output_format = utils.EMBL_FORMAT
+    elif not utils.group_format_allowed(group, output_format, aspera):
         sys.stderr.write('ERROR: Illegal group and format combination provided.  Allowed:\n')
         sys.stderr.write('sequence, assembly and wgs groups: embl and fasta formats\n')
         sys.stderr.write('read group: submitted, fastq and sra formats\n')
@@ -167,7 +167,7 @@ if __name__ == '__main__':
         if utils.is_taxid(accession) and group in ['read', 'analysis']:
             print('Sorry, tax ID retrieval not yet supported for read and analysis')
             sys.exit(1)
-        download_group(accession, group, format, dest_dir, fetch_wgs, fetch_meta, fetch_index, aspera, subtree)
+        download_group(accession, group, output_format, dest_dir, fetch_wgs, fetch_meta, fetch_index, aspera, subtree)
         print ('Completed')
     except Exception:
         utils.print_error()

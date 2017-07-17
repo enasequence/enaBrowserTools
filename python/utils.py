@@ -192,47 +192,47 @@ def get_accession_type(accession):
         return TAXON
     return None
 
-def accession_format_allowed(accession, format, aspera):
+def accession_format_allowed(accession, output_format, aspera):
     if is_analysis(accession):
-        return format == SUBMITTED_FORMAT
+        return output_format == SUBMITTED_FORMAT
     if is_run(accession) or is_experiment(accession):
         if aspera:
-            return format in [SUBMITTED_FORMAT, FASTQ_FORMAT, SRA_ASPERA_FIELD]
+            return output_format in [SUBMITTED_FORMAT, FASTQ_FORMAT, SRA_ASPERA_FIELD]
         else:
-            return format in [SUBMITTED_FORMAT, FASTQ_FORMAT, SRA_FIELD]
-    return format in [EMBL_FORMAT, FASTA_FORMAT]
+            return output_format in [SUBMITTED_FORMAT, FASTQ_FORMAT, SRA_FIELD]
+    return output_format in [EMBL_FORMAT, FASTA_FORMAT]
 
-def group_format_allowed(group, format, aspera):
+def group_format_allowed(group, output_format, aspera):
     if group == ANALYSIS:
-        return format == SUBMITTED_FORMAT
+        return output_format == SUBMITTED_FORMAT
     if group == READ:
         if aspera:
-            return format in [SUBMITTED_FORMAT, FASTQ_FORMAT, SRA_ASPERA_FIELD]
+            return output_format in [SUBMITTED_FORMAT, FASTQ_FORMAT, SRA_ASPERA_FIELD]
         else:
-            return format in [SUBMITTED_FORMAT, FASTQ_FORMAT, SRA_FIELD]
-    return format in [EMBL_FORMAT, FASTA_FORMAT]
+            return output_format in [SUBMITTED_FORMAT, FASTQ_FORMAT, SRA_FIELD]
+    return output_format in [EMBL_FORMAT, FASTA_FORMAT]
 
 # assumption is that accession and format have already been vetted before this method is called
-def get_record_url(accession, format):
-    if format == XML_FORMAT:
+def get_record_url(accession, output_format):
+    if output_format == XML_FORMAT:
         return VIEW_URL_BASE + accession + XML_DISPLAY
-    elif format == EMBL_FORMAT:
+    elif output_format == EMBL_FORMAT:
         return VIEW_URL_BASE + accession + EMBL_DISPLAY
-    elif format == FASTA_FORMAT:
+    elif output_format == FASTA_FORMAT:
         return VIEW_URL_BASE + accession + FASTA_DISPLAY
     return None
 
-def get_filename(base_name, format):
-    if format == XML_FORMAT:
+def get_filename(base_name, output_format):
+    if output_format == XML_FORMAT:
         return base_name + XML_EXT
-    elif format == EMBL_FORMAT:
+    elif output_format == EMBL_FORMAT:
         return base_name + EMBL_EXT
-    elif format == FASTA_FORMAT:
+    elif output_format == FASTA_FORMAT:
         return base_name + FASTA_EXT
     return None
 
-def get_destination_file(dest_dir, accession, format):
-    filename = get_filename(accession, format)
+def get_destination_file(dest_dir, accession, output_format):
+    filename = get_filename(accession, output_format)
     if filename is not None:
         return os.path.join(dest_dir, filename)
     return None
@@ -240,10 +240,10 @@ def get_destination_file(dest_dir, accession, format):
 def download_single_record(url, dest_file):
     urllib.urlretrieve(url, dest_file)
 
-def download_record(dest_dir, accession, format):
+def download_record(dest_dir, accession, output_format):
     try:
-        dest_file = get_destination_file(dest_dir, accession, format)
-        url = get_record_url(accession, format)
+        dest_file = get_destination_file(dest_dir, accession, output_format)
+        url = get_record_url(accession, output_format)
         download_single_record(url, dest_file)
         return True
     except Exception:
@@ -347,6 +347,8 @@ def set_aspera_variables(filepath):
 
 def asperaretrieve(url, dest_dir, dest_file):
     try:
+        if not os.path.exists(ASPERA_BIN) or not os.path.exists(ASPERA_PRIVATE_KEY):
+            raise FileNotFoundError('Aspera not available. Check your ascp binary path and your private key file is specified correctly')
         logdir=os.path.abspath(os.path.join(dest_dir, "logs"))
         create_dir(logdir)
         aspera_line="{bin} -QT -L {logs} -l {speed} -P33001 {aspera} -i {key} era-fasp@{file} {outdir}"
@@ -366,19 +368,19 @@ def asperaretrieve(url, dest_dir, dest_file):
         sys.stderr.write("Error with Aspera transfer: {0}\n".format(e))
         return False
 
-def get_wgs_file_ext(format):
-    if format == EMBL_FORMAT:
+def get_wgs_file_ext(output_format):
+    if output_format == EMBL_FORMAT:
         return WGS_EMBL_EXT
-    elif format == FASTA_FORMAT:
+    elif output_format == FASTA_FORMAT:
         return WGS_FASTA_EXT
-    elif format == MASTER_FORMAT:
+    elif output_format == MASTER_FORMAT:
         return WGS_MASTER_EXT
 
-def get_wgs_ftp_url(wgs_set, status, format):
+def get_wgs_ftp_url(wgs_set, status, output_format):
     base_url = WGS_FTP_BASE + '/' + status + '/' + wgs_set[:2].lower() + '/' + wgs_set
-    return base_url + get_wgs_file_ext(format)
+    return base_url + get_wgs_file_ext(output_format)
 
-def get_nonversioned_wgs_ftp_url(wgs_set, status, format):
+def get_nonversioned_wgs_ftp_url(wgs_set, status, output_format):
     ftp_url = 'ftp.ebi.ac.uk'
     base_dir = WGS_FTP_DIR + '/' + status + '/' + wgs_set[:2].lower()
     base_url = WGS_FTP_BASE + '/' + status + '/' + wgs_set[:2].lower()
@@ -387,7 +389,7 @@ def get_nonversioned_wgs_ftp_url(wgs_set, status, format):
     ftp.cwd(base_dir)
     supp = ftp.nlst()
     ftp.close()
-    files = [f for f in supp if f.startswith(wgs_set) and f.endswith(get_wgs_file_ext(format))]
+    files = [f for f in supp if f.startswith(wgs_set) and f.endswith(get_wgs_file_ext(output_format))]
     if len(files) == 0:
         return None
     else:
@@ -417,14 +419,14 @@ def get_accession_query(accession):
     query += '"'
     return query
 
-def get_file_fields(accession, format, fetch_index, aspera):
+def get_file_fields(accession, output_format, fetch_index, aspera):
     if aspera:
-        fields = get_aspera_file_fields(accession, format, fetch_index)
+        fields = get_aspera_file_fields(accession, output_format, fetch_index)
     else:
         fields = 'fields='
-        if format == SRA_FORMAT:
+        if output_format == SRA_FORMAT:
             fields += SRA_FIELD + ',' + SRA_MD5_FIELD
-        elif format == FASTQ_FORMAT:
+        elif output_format == FASTQ_FORMAT:
             fields += FASTQ_FIELD + ',' + FASTQ_MD5_FIELD
         else:
             fields += SUBMITTED_FIELD + ',' + SUBMITTED_MD5_FIELD
@@ -432,11 +434,11 @@ def get_file_fields(accession, format, fetch_index, aspera):
                 fields += ',' + INDEX_FIELD
     return fields
 
-def get_aspera_file_fields(accession, format, fetch_index):
+def get_aspera_file_fields(accession, output_format, fetch_index):
     fields = 'fields='
-    if format == SRA_FORMAT:
+    if output_format == SRA_FORMAT:
         fields += SRA_ASPERA_FIELD + ',' + SRA_MD5_FIELD
-    elif format == FASTQ_FORMAT:
+    elif output_format == FASTQ_FORMAT:
         fields += FASTQ_ASPERA_FIELD + ',' + FASTQ_MD5_FIELD
     else:
         fields += SUBMITTED_ASPERA_FIELD + ',' + SUBMITTED_MD5_FIELD
@@ -450,17 +452,19 @@ def get_result(accession):
     else:  # is_analysis(accession)
         return ANALYSIS_RESULT
 
-def get_file_search_query(accession, format, fetch_index, aspera):
-    return PORTAL_SEARCH_BASE + get_accession_query(accession) + '&' + get_result(accession) + '&' + get_file_fields(accession, format, fetch_index, aspera) + '&limit=0'
+def get_file_search_query(accession, output_format, fetch_index, aspera):
+    return PORTAL_SEARCH_BASE + get_accession_query(accession) + '&' + \
+        get_result(accession) + '&' + \
+        get_file_fields(accession, output_format, fetch_index, aspera) + '&limit=0'
 
-def parse_file_search_result_line(line, accession, format, fetch_index):
+def parse_file_search_result_line(line, accession, output_format, fetch_index):
     cols = line.split('\t')
     if cols[1] == '':
         return cols[0].strip(), [], [], []
     filelist = cols[1].strip().split(';')
     md5list = cols[2].strip().split(';')
     indexlist = []
-    if format == SUBMITTED_FORMAT and fetch_index and not is_analysis(accession):
+    if output_format == SUBMITTED_FORMAT and fetch_index and not is_analysis(accession):
         indexlist = cols[3].strip().split(';')
     return cols[0].strip(), filelist, md5list, indexlist
 

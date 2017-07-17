@@ -8,15 +8,15 @@ import argparse
 
 import utils
 
-def check_read_format(format):
-    if format not in [utils.SUBMITTED_FORMAT, utils.FASTQ_FORMAT, utils.SRA_FORMAT]:
+def check_read_format(output_format):
+    if output_format not in [utils.SUBMITTED_FORMAT, utils.FASTQ_FORMAT, utils.SRA_FORMAT]:
         sys.stderr.write('ERROR: Invalid format. Please select a valid format for this accession: {0}\n'.format(
             [utils.SUBMITTED_FORMAT, utils.FASTQ_FORMAT, utils.SRA_FORMAT])
         )
         sys.exit(1)
 
-def check_analysis_format(format):
-    if format != utils.SUBMITTED_FORMAT:
+def check_analysis_format(output_format):
+    if output_format != utils.SUBMITTED_FORMAT:
         sys.stderr.write(
             'ERROR: Invalid format. Please select a valid format for this accession: {0}\n'.format(
             utils.SUBMITTED_FORMAT)
@@ -59,9 +59,9 @@ def download_experiment_meta(run_accession, dest_dir):
         break
     download_meta(experiment_accession, dest_dir)
 
-def download_files(accession, format, dest_dir, fetch_index, fetch_meta, aspera):
-    if format is None:
-        format = utils.SUBMITTED_FORMAT
+def download_files(accession, output_format, dest_dir, fetch_index, fetch_meta, aspera):
+    if output_format is None:
+        output_format = utils.SUBMITTED_FORMAT
     accession_dir = os.path.join(dest_dir, accession)
     utils.create_dir(accession_dir)
     # download experiment xml
@@ -71,7 +71,7 @@ def download_files(accession, format, dest_dir, fetch_index, fetch_meta, aspera)
     if fetch_meta and utils.is_run(accession):
         download_experiment_meta(accession, accession_dir)
     # download data files
-    search_url = utils.get_file_search_query(accession, format, fetch_index, aspera)
+    search_url = utils.get_file_search_query(accession, output_format, fetch_index, aspera)
     temp_file = os.path.join(dest_dir, 'temp.txt')
     utils.download_report_from_portal(search_url, temp_file)
     f = open(temp_file)
@@ -79,8 +79,8 @@ def download_files(accession, format, dest_dir, fetch_index, fetch_meta, aspera)
     f.close()
     os.remove(temp_file)
     for line in lines[1:]:
-        data_accession, filelist, md5list, indexlist = utils.parse_file_search_result_line(line, accession,
-                                                                                           format, fetch_index)
+        data_accession, filelist, md5list, indexlist = utils.parse_file_search_result_line(
+            line, accession, output_format, fetch_index)
         # create run directory if downloading all data for an experiment
         if is_experiment:
             run_dir = os.path.join(accession_dir, data_accession)
@@ -92,7 +92,7 @@ def download_files(accession, format, dest_dir, fetch_index, fetch_meta, aspera)
         if fetch_meta:
             download_meta(data_accession, target_dir)
         if len(filelist) == 0:
-            print ('No files of format ' + format + ' for ' + data_accession)
+            print ('No files of format {0} for {1}'.format(output_format, data_accession))
             continue
         for i in range(len(filelist)):
             file_url = filelist[i]

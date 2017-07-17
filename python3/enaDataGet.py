@@ -42,7 +42,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     accession = args.accession
-    format = args.format
+    output_format = args.format
     dest_dir = args.dest
     fetch_wgs = args.wgs
     fetch_meta = args.meta
@@ -56,28 +56,28 @@ if __name__ == '__main__':
 
     try:
         if utils.is_wgs_set(accession):
-            if format is not None:
-                sequenceGet.check_format(format)
-            sequenceGet.download_wgs(dest_dir, accession, format)
+            if output_format is not None:
+                sequenceGet.check_format(output_format)
+            sequenceGet.download_wgs(dest_dir, accession, output_format)
         elif not utils.is_available(accession):
             sys.stderr.write('ERROR: Record does not exist or is not available for accession provided\n')
             sys.exit(1)
         elif utils.is_sequence(accession):
-            if format is not None:
-                sequenceGet.check_format(format)
-            sequenceGet.download_sequence(dest_dir, accession, format)
+            if output_format is not None:
+                sequenceGet.check_format(output_format)
+            sequenceGet.download_sequence(dest_dir, accession, output_format)
         elif utils.is_analysis(accession):
-            if format is not None:
-                readGet.check_read_format(format)
-            readGet.download_files(accession, format, dest_dir, fetch_index, fetch_meta, aspera)
+            if output_format is not None:
+                readGet.check_read_format(output_format)
+            readGet.download_files(accession, output_format, dest_dir, fetch_index, fetch_meta, aspera)
         elif utils.is_run(accession) or utils.is_experiment(accession):
-            if format is not None:
-                readGet.check_read_format(format)
-            readGet.download_files(accession, format, dest_dir, fetch_index, fetch_meta, aspera)
+            if output_format is not None:
+                readGet.check_read_format(output_format)
+            readGet.download_files(accession, output_format, dest_dir, fetch_index, fetch_meta, aspera)
         elif utils.is_assembly(accession):
-            if format is not None:
-                assemblyGet.check_format(format)
-            assemblyGet.download_assembly(dest_dir, accession, format, fetch_wgs)
+            if output_format is not None:
+                assemblyGet.check_format(output_format)
+            assemblyGet.download_assembly(dest_dir, accession, output_format, fetch_wgs)
         else:
             sys.stderr.write('ERROR: Invalid accession provided\n')
             sys.exit(1)
