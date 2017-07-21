@@ -103,9 +103,11 @@ analysis_pattern = re.compile('^[EDS]RZ[0-9]{6,7}$')
 assembly_pattern = re.compile('^GCA_[0-9]{9}(\.[0-9]+)?$')
 study_pattern_1 = re.compile('^[EDS]RP[0-9]{6,7}$')
 study_pattern_2 = re.compile('^PRJ[EDN][AB][0-9]+$')
-sample_pattern_1 = re.compile('^SAM[ND][0-9]{7}$')
+sample_pattern_1 = re.compile('^SAM[ND][0-9]{8}$')
 sample_pattern_2 = re.compile('^SAMEA[0-9]{6,}$')
 sample_pattern_3 = re.compile('^[EDS]RS[0-9]{6,7}$')
+
+enaBrowserTools_path = os.path.dirname(os.path.dirname(__file__))
 
 def is_sequence(accession):
     return sequence_pattern_1.match(accession) or sequence_pattern_2.match(accession) \
@@ -342,14 +344,36 @@ def set_aspera_variables(filepath):
         ASPERA_BIN = parser.get('aspera', 'ASPERA_BIN')
         global ASPERA_PRIVATE_KEY
         ASPERA_PRIVATE_KEY = parser.get('aspera', 'ASPERA_PRIVATE_KEY')
+        if not os.path.exists(ASPERA_PRIVATE_KEY):
+            print('Private key file ({0}) does not exist. Defaulting to FTP transfer'.format(ASPERA_PRIVATE_KEY))
+            return False
         global ASPERA_SPEED
         ASPERA_SPEED = parser.get('aspera', 'ASPERA_SPEED')
         global ASPERA_OPTIONS
         ASPERA_OPTIONS = parser.get('aspera', 'ASPERA_OPTIONS')
+        return True
     except Exception as e:
-        sys.stderr.write("ERROR: cannot read aspera settings from {0}\n".format(filepath))
+        sys.stderr.write("ERROR: cannot read aspera settings from {0}.\n".format(filepath))
         sys.stderr.write("{0}\n".format(e))
         sys.exit(1)
+
+def set_aspera(aspera_filepath):
+    aspera = True
+    if aspera_filepath is not None:
+        if os.path.exists(aspera_filepath):
+            aspera = set_aspera_variables(aspera_filepath)
+        else:
+            print('Cannot find {0} file, defaulting to FTP transfer'.format(aspera_filepath))
+            aspera = False
+    elif os.environ.get('ENA_ASPERA_INIFILE'):
+        aspera = set_aspera_variables(os.environ.get('ENA_ASPERA_INIFILE'))
+    else:
+        if os.path.exists(os.path.join(enaBrowserTools_path, 'aspera_settings.ini')):
+            aspera = set_aspera_variables(os.path.join(enaBrowserTools_path, 'aspera_settings.ini'))
+        else:
+            print('Cannot find aspera_settings.ini file, defaulting to FTP transfer')
+            aspera = False
+    return aspera
 
 def asperaretrieve(url, dest_dir, dest_file):
     try:
@@ -418,42 +442,40 @@ def download_report_from_portal(url, dest_file):
     f.close()
 
 def get_accession_query(accession):
-    query = 'query="'
+    query = 'query='
     if is_run(accession):
         query += 'run_accession="{0}"'.format(accession)
     elif is_experiment(accession):
         query += 'experiment_accession="{0}"'.format(accession)
     elif is_analysis(accession):
         query += 'analysis_accession="{0}"'.format(accession)
-    query += '"'
     return query
 
-def get_file_fields(accession, output_format, fetch_index, aspera):
-    if aspera:
-        fields = get_aspera_file_fields(accession, output_format, fetch_index)
-    else:
-        fields = 'fields='
-        if output_format == SRA_FORMAT:
-            fields += SRA_FIELD + ',' + SRA_MD5_FIELD
-        elif output_format == FASTQ_FORMAT:
-            fields += FASTQ_FIELD + ',' + FASTQ_MD5_FIELD
-        else:
-            fields += SUBMITTED_FIELD + ',' + SUBMITTED_MD5_FIELD
-            if fetch_index and not is_analysis(accession):
-                fields += ',' + INDEX_FIELD
+def get_ftp_file_fields(accession):
+    fields = 'fields='
+    fields += SUBMITTED_FIELD + ',' + SUBMITTED_MD5_FIELD
+    if is_analysis(accession):
+        return fields
+    fields += ',' + INDEX_FIELD
+    fields += ',' + SRA_FIELD + ',' + SRA_MD5_FIELD
+    fields += ',' + FASTQ_FIELD + ',' + FASTQ_MD5_FIELD
     return fields
 
-def get_aspera_file_fields(accession, output_format, fetch_index):
+def get_aspera_file_fields(accession):
     fields = 'fields='
-    if output_format == SRA_FORMAT:
-        fields += SRA_ASPERA_FIELD + ',' + SRA_MD5_FIELD
-    elif output_format == FASTQ_FORMAT:
-        fields += FASTQ_ASPERA_FIELD + ',' + FASTQ_MD5_FIELD
-    else:
-        fields += SUBMITTED_ASPERA_FIELD + ',' + SUBMITTED_MD5_FIELD
-        if fetch_index and not is_analysis(accession):
-            fields += ',' + INDEX_ASPERA_FIELD
+    fields += SUBMITTED_ASPERA_FIELD + ',' + SUBMITTED_MD5_FIELD
+    if is_analysis(accession):
+        return fields
+    fields += ',' + INDEX_ASPERA_FIELD
+    fields += ',' + SRA_ASPERA_FIELD + ',' + SRA_MD5_FIELD
+    fields += ',' + FASTQ_ASPERA_FIELD + ',' + FASTQ_MD5_FIELD
     return fields
+
+def get_file_fields(accession, aspera):
+    if aspera:
+        return get_aspera_file_fields(accession)
+    else:
+        return get_ftp_file_fields(accession)
 
 def get_result(accession):
     if is_run(accession) or is_experiment(accession):
@@ -461,20 +483,39 @@ def get_result(accession):
     else:  # is_analysis(accession)
         return ANALYSIS_RESULT
 
-def get_file_search_query(accession, output_format, fetch_index, aspera):
-    return PORTAL_SEARCH_BASE + get_accession_query(accession) + '&' \
-        + get_result(accession) + '&' + get_file_fields(accession, output_format, fetch_index, aspera) + '&limit=0'
+def get_file_search_query(accession, aspera):
+    return PORTAL_SEARCH_BASE + get_accession_query(accession) + '&' + \
+        get_result(accession) + '&' + \
+        get_file_fields(accession, aspera) + '&limit=0'
 
-def parse_file_search_result_line(line, accession, output_format, fetch_index):
+def split_filelist(filelist_string):
+    if filelist_string.strip() == '':
+        return []
+    return filelist_string.strip().split(';')
+
+def parse_file_search_result_line(line, accession, output_format):
     cols = line.split('\t')
-    if cols[1] == '':
-        return cols[0].strip(), [], [], []
-    filelist = cols[1].strip().split(';')
-    md5list = cols[2].strip().split(';')
-    indexlist = []
-    if output_format == SUBMITTED_FORMAT and fetch_index and not is_analysis(accession):
-        indexlist = cols[3].strip().split(';')
-    return cols[0].strip(), filelist, md5list, indexlist
+    data_acc = cols[0].strip()
+    sub_filelist = split_filelist(cols[1])
+    sub_md5list = split_filelist(cols[2])
+    if is_analysis(accession):
+        return data_acc, sub_filelist, sub_md5list, []
+    indexlist = split_filelist(cols[3])
+    sra_filelist = split_filelist(cols[4])
+    sra_md5list = split_filelist(cols[5])
+    fastq_filelist = split_filelist(cols[6])
+    fastq_md5list = split_filelist(cols[7])
+    if (output_format is None and len(sub_filelist) > 0):
+        output_format = SUBMITTED_FORMAT
+    elif (output_format is None and len(sra_filelist) > 0):
+        output_format = SRA_FORMAT
+    elif output_format is None:
+        output_format = FASTQ_FORMAT
+    if output_format == SUBMITTED_FORMAT:
+        return data_acc, sub_filelist, sub_md5list, indexlist
+    if output_format == SRA_FORMAT:
+        return data_acc, sra_filelist, sra_md5list, []
+    return data_acc, fastq_filelist, fastq_md5list, []
 
 def create_dir(dir_path):
     if not os.path.exists(dir_path):

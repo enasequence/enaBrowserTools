@@ -38,6 +38,8 @@ We will look more into the Windows equivalent of aliases to run batch files from
 
 ## Setting up for Aspera
 
+*Important: there has been a change to using aspera in version 1.4.*
+
 If you wish to use Aspera to download read or analysis files, you will need to use the aspera_settings.ini file.  Please save it to a static location on your local computer, and edit the file to include the location of your aspera binary (ASPERA_BIN) and the private key file (ASPERA_PRIVATE_KEY):
 
 ```
@@ -48,13 +50,31 @@ ASPERA_OPTIONS =
 ASPERA_SPEED = 100M
 ```
 
-You will need to provide a path to this file every time you chose to run aspera.
+There are two command line flags/options available if you wish to use aspera for download. These are:
+1. -a (or --aspera): use this flag if you'd like to download with aspera.
+2. -as (or --aspera-settings): use this option if you'd like to specify the location of your aspera settings file. If you use this option, you don't need to use the --aspera flag.
+
+If you use the --aspera-settings option, you don't need to also use the --aspera flag, e.g:
 
 ```
-enaDataGet -f fastq -a /path/to/aspera_settings.ini ACCESSION
+enaDataGet -f fastq -as /path/to/aspera_settings.ini ACCESSION
 ```
 
-Note that if you don't save this file to a location outside of the enaBrowserTools directory, your settings will be wiped each time you update to a new release.
+If you don't wish to specify the location of the aspera settings file each time you use the scripts, you have the option to either set an ENA_ASPERA_INIFILE environment variable to save the location:
+
+```
+export ENA_ASPERA_INIFILE="/path/to/aspera_settings.ini"
+```
+
+or you can use the default location for the file, this is the enaBrowserTools directory.  Note that if you use this option, you will have to be careful about how you update your scripts so that you don't overwrite your aspera settings file.
+
+Using just the --aspera flag will result in the scripts looking first for the ENA_ASPERA_INIFILE environment variable, and second for the default file location.
+
+```
+enaDataGet -f fastq -a ACCESSION
+```
+
+Regardless of which option you have selected, if the aspera settings file cannot be found or the licence key file declared within your settings file does not exist, the scripts will default to using FTP for the download.
 
 # Command line
 
@@ -72,7 +92,7 @@ Accepted WGS set accession formats are:
 
 ```
 usage: enaDataGet [-h] [-f {embl,fasta,submitted,fastq,sra}] [-d DEST] [-w]
-                  [-m] [-i] [-a ASPERA] [-v]
+                  [-m] [-i] [-a] [-as ASPERA_SETTINGS] [-v]
                   accession
 
 Download data for a given accession
@@ -87,9 +107,8 @@ optional arguments:
                         File format required. Format requested must be
                         permitted for data type selected. sequence, assembly
                         and wgs accessions: embl(default) and fasta formats.
-                        read group: submitted (default), fastq and sra
-                        formats. analysis group: submitted only. Default is
-                        submitted
+                        read group: submitted, fastq and sra
+                        formats. analysis group: submitted only.
   -d DEST, --dest DEST  Destination directory (default is current running
                         directory)
   -w, --wgs             Download WGS set for each assembly if available
@@ -99,9 +118,12 @@ optional arguments:
   -i, --index           Download CRAM index files with submitted CRAM files,
                         if any (default is false). This flag is ignored for
                         fastq and sra format options.
-  -a ASPERA, --aspera ASPERA
-                        Use the aspera command line client to download,
-                        instead of FTP, with the provided settings file.
+  -a, --aspera          Use the aspera command line client to download,
+                        instead of FTP.
+  -as ASPERA_SETTINGS, --aspera-settings ASPERA_SETTINGS
+                        Use the provided settings file, will otherwise check
+                        for environment variable or default settings file
+                        location.
   -v, --version         show program's version number and exit
 ```
 
@@ -116,7 +138,7 @@ Usage of this tool is described below.  A new directory will be created using th
 ```
 usage: enaGroupGet [-h] [-g {sequence,wgs,assembly,read,analysis}]
                    [-f {embl,fasta,submitted,fastq,sra}] [-d DEST] [-w] [-m]
-                   [-i] [-a ASPERA] [-t] [-v]
+                   [-i] [-a] [-as ASPERA_SETTINGS] [-t] [-v]
                    accession
 
 Download data for a given study or sample
@@ -145,13 +167,20 @@ optional arguments:
   -i, --index           Download CRAM index files with submitted CRAM files,
                         if any (default is false). This flag is ignored for
                         fastq and sra format options.
-  -a ASPERA, --aspera ASPERA
-                        Use the aspera command line client to download,
-                        instead of FTP, with the provided settings file.
+  -a, --aspera          Use the aspera command line client to download,
+                        instead of FTP.
+  -as ASPERA_SETTINGS, --aspera-settings ASPERA_SETTINGS
+                        Use the provided settings file, will otherwise check
+                        for environment variable or default settings file
+                        location.
   -t, --subtree         Include subordinate taxa (taxon subtree) when querying
                         with NCBI tax ID (default is false)
   -v, --version         show program's version number and exit
 ```
+
+# Tips
+
+From version 1.4, when downloading read data if you use the default format (that is, don't use the format option), the scripts will look for available files in the following priority: submitted, sra, fastq. 
 
 # Problems
 

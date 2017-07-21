@@ -20,8 +20,7 @@ def set_parser():
                         choices=['embl', 'fasta', 'submitted', 'fastq', 'sra'],
                         help="""File format required. Format requested must be permitted for
                               data type selected. sequence, assembly and wgs accessions: embl(default) and fasta formats.
-                              read group: submitted (default), fastq and sra formats. analysis group: submitted only.
-                              Default is submitted""")
+                              read group: submitted, fastq and sra formats. analysis group: submitted only.""")
     parser.add_argument('-d', '--dest', default='.',
                         help='Destination directory (default is current running directory)')
     parser.add_argument('-w', '--wgs', action='store_true',
@@ -31,9 +30,12 @@ def set_parser():
     parser.add_argument('-i', '--index', action='store_true',
                         help="""Download CRAM index files with submitted CRAM files, if any (default is false).
                             This flag is ignored for fastq and sra format options. """)
-    parser.add_argument('-a', '--aspera', default=None,
-                        help='Use the aspera command line client to download, instead of FTP, with the provided settings file.')
-    parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.3.1')
+    parser.add_argument('-a', '--aspera', action='store_true',
+                        help='Use the aspera command line client to download, instead of FTP.')
+    parser.add_argument('-as', '--aspera-settings', default=None,
+                    help="""Use the provided settings file, will otherwise check
+                        for environment variable or default settings file location.""")
+    parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.4')
     return parser
 
 
@@ -47,12 +49,11 @@ if __name__ == '__main__':
     fetch_wgs = args.wgs
     fetch_meta = args.meta
     fetch_index = args.index
-    aspera_settings = args.aspera
+    aspera = args.aspera
+    aspera_settings = args.aspera_settings
 
-    aspera = False
-    if aspera_settings is not None:
-        aspera = True
-        utils.set_aspera_variables(aspera_settings)
+    if aspera or aspera_settings is not None:
+        aspera = utils.set_aspera(aspera_settings)
 
     try:
         if utils.is_wgs_set(accession):
