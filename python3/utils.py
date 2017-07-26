@@ -271,6 +271,7 @@ def get_ftp_file(ftp_url, dest_dir):
     try:
         filename = ftp_url.split('/')[-1]
         dest_file = os.path.join(dest_dir, filename)
+        if os.path.isfile(dest_file): return True
         urlrequest.urlretrieve(ftp_url, dest_file)
         return True
     except Exception as e:
