@@ -50,7 +50,7 @@ def set_parser():
     parser.add_argument('-as', '--aspera-settings', default=None,
                     help="""Use the provided settings file, will otherwise check
                         for environment variable or default settings file location.""")
-    parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.4')
+    parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.4.1')
     return parser
 
 
@@ -69,7 +69,7 @@ if __name__ == '__main__':
 
     if aspera or aspera_settings is not None:
         aspera = utils.set_aspera(aspera_settings)
-    
+
     try:
         if utils.is_wgs_set(accession):
             if output_format is not None:
