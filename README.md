@@ -182,6 +182,11 @@ optional arguments:
 
 From version 1.4, when downloading read data if you use the default format (that is, don't use the format option), the scripts will look for available files in the following priority: submitted, sra, fastq. 
 
+A word of advice for read formats:
+- submitted: only read data submitted to ENA have files available as submitted by the user. 
+- sra:  this is the NCBI SRA format, and is the format in which all NCBI/DDBJ data is mirrored to ENA.
+- fastq:  not all submitted format files can be converted to FASTQ
+
 # Problems
 
 For any problems, please contact datasubs@ebi.ac.uk with 'enaBrowserTools' in your subject line.
