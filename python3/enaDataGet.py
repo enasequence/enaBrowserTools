@@ -69,7 +69,7 @@ if __name__ == '__main__':
 
     if aspera or aspera_settings is not None:
         aspera = utils.set_aspera(aspera_settings)
-
+    
     try:
         if utils.is_wgs_set(accession):
             if output_format is not None:

@@ -254,17 +254,14 @@ def get_destination_file(dest_dir, accession, output_format):
         return os.path.join(dest_dir, filename)
     return None
 
-def download_single_record(url, dest_file, aspera):
-    if aspera:
-        asperaretrieve(url, os.dirname(dest_file), dest_file)
-    else:
+def download_single_record(url, dest_file):
         urlrequest.urlretrieve(url, dest_file)
 
-def download_record(dest_dir, accession, output_format, aspera):
+def download_record(dest_dir, accession, output_format):
     try:
         dest_file = get_destination_file(dest_dir, accession, output_format)
         url = get_record_url(accession, output_format)
-        download_single_record(url, dest_file, aspera)
+        download_single_record(url, dest_file)
         return True
     except Exception as e:
         print ("Error downloading read record: {0}".format(e))
