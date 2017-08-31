@@ -26,6 +26,8 @@ import subprocess
 import sys
 import urllib
 import urllib2
+import pexpect
+from datetime import datetime
 import xml.etree.ElementTree as ElementTree
 
 from ConfigParser import SafeConfigParser
@@ -400,12 +402,101 @@ def asperaretrieve(url, dest_dir, dest_file):
             key=ASPERA_PRIVATE_KEY,
             speed=ASPERA_SPEED,
         )
-        print aspera_line
-        subprocess.call(aspera_line, shell=True) # this blocks so we're fine to wait and return True
+        #print aspera_line
+        #subprocess.call(aspera_line, shell=True) # this blocks so we're fine to wait and return True
+        _do_aspera_transfer(aspera_line)
         return True
     except Exception as e:
         sys.stderr.write("Error with Aspera transfer: {0}\n".format(e))
         return False
+
+def _do_aspera_transfer(cmd):
+    try:
+        sub_id = base64.b64encode(cmd)
+        thread = pexpect.spawn(cmd, timeout=None)
+        #thread.expect(["assword:", pexpect.EOF])
+        #thread.sendline(password)
+
+        cpl = thread.compile_pattern_list([pexpect.EOF, '(.+)'])
+
+        while True:
+            i = thread.expect_list(cpl, timeout=None)
+            if i == 0:  # EOF! Possible error point if encountered before transfer completion
+                print("Process termination - check exit status!")
+                break
+            elif i == 1:
+                pexp_match = thread.match.group(1)
+                prev_file = ''
+                tokens_to_match = ["Mb/s"]
+                units_to_match = ["KB", "MB"]
+                time_units = ['d', 'h', 'm', 's']
+                end_of_transfer = False
+
+                if all(tm in pexp_match.decode("utf-8") for tm in tokens_to_match):
+                    fields = {
+                        "transfer_status": "transferring",
+                        "current_time": datetime.now().strftime("%d-%m-%Y %H:%M:%S")
+                    }
+
+                    tokens = pexp_match.decode("utf-8").split(" ")
+
+                    #lg.log(tokens, level=Loglvl.INFO, type=Logtype.FILE)
+
+                    for token in tokens:
+                        if not token == '':
+                            if "file" in token:
+                                fields['file_path'] = token.split('=')[-1]
+                                if prev_file != fields['file_path']:
+                                    k = k + 1
+                                prev_file == fields['file_path']
+                            elif '%' in token:
+                                pct = float((token.rstrip("%")))
+                                # pct = (1/len(file_path) * pct) + (k * 1/len(file_path) * 100)
+                                fields['pct_completed'] = pct
+                                # flag end of transfer
+                                print(str(pct) + '% transfered')
+                                if token.rstrip("%") == 100:
+                                    end_of_transfer = True
+                            elif any(um in token for um in units_to_match):
+                                fields['amt_transferred'] = token
+                            elif "Mb/s" in token or "Mbps" in token:
+                                t = token[:-4]
+                                if '=' in t:
+                                    fields['transfer_rate'] = t[t.find('=') + 1:]
+                                else:
+                                    fields['transfer_rate'] = t
+                            elif "status" in token:
+                                fields['transfer_status'] = token.split('=')[-1]
+                            elif "rate" in token:
+                                fields['transfer_rate'] = token.split('=')[-1]
+                            elif "elapsed" in token:
+                                fields['elapsed_time'] = token.split('=')[-1]
+                            elif "loss" in token:
+                                fields['bytes_lost'] = token.split('=')[-1]
+                            elif "size" in token:
+                                fields['file_size_bytes'] = token.split('=')[-1]
+
+                            elif "ETA" in token:
+                                eta = tokens[-2]
+                                estimated_completion = ""
+                                eta_split = eta.split(":")
+                                t_u = time_units[-len(eta_split):]
+                                for indx, eta_token in enumerate(eta.split(":")):
+                                    if eta_token == "00":
+                                        continue
+                                    estimated_completion += eta_token + t_u[indx] + " "
+                                fields['estimated_completion'] = estimated_completion
+
+        kwargs = dict(target_id=sub_id, completed_on=datetime.now())
+        #Submission().save_record(dict(), **kwargs)
+        # close thread
+        thread.close()
+        print 'Aspera Transfer completed'
+
+    except OSError:
+        print "Error"
+    finally:
+        pass
 
 def get_wgs_file_ext(output_format):
     if output_format == EMBL_FORMAT:
