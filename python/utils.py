@@ -289,11 +289,11 @@ def get_ftp_file(ftp_url, dest_dir):
     except Exception:
         return False
 
-def get_aspera_file(aspera_url, dest_dir):
+def get_aspera_file(aspera_url, dest_dir, handler=None):
     try:
         filename = aspera_url.split('/')[-1]
         dest_file = os.path.join(dest_dir, filename)
-        asperaretrieve(aspera_url, dest_dir, dest_file)
+        asperaretrieve(aspera_url, dest_dir, dest_file, handler)
         return True
     except Exception:
         return False
@@ -335,11 +335,11 @@ def get_ftp_file_with_md5_check(ftp_url, dest_dir, md5):
         sys.stderr.write("Error with FTP transfer: {0}\n".format(e))
         return False
 
-def get_aspera_file_with_md5_check(aspera_url, dest_dir, md5):
+def get_aspera_file_with_md5_check(aspera_url, dest_dir, md5, handler=None):
     try:
         filename = aspera_url.split('/')[-1]
         dest_file = os.path.join(dest_dir, filename)
-        success = asperaretrieve(aspera_url, dest_dir, dest_file)
+        success = asperaretrieve(aspera_url, dest_dir, dest_file, handler)
         if success:
             return check_md5(dest_file, md5)
         return success

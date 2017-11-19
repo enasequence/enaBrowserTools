@@ -289,11 +289,11 @@ def get_ftp_file(ftp_url, dest_dir):
         print ("Error with FTP transfer: {0}".format(e))
         return False
 
-def get_aspera_file(aspera_url, dest_dir):
+def get_aspera_file(aspera_url, dest_dir, handler=None):
     try:
         filename = aspera_url.split('/')[-1]
         dest_file = os.path.join(dest_dir, filename)
-        asperaretrieve(aspera_url, dest_dir, dest_file)
+        asperaretrieve(aspera_url, dest_dir, dest_file, handler)
         return True
     except Exception:
         print ("Error with FTP transfer: {0}".format(e))
@@ -387,7 +387,7 @@ def set_aspera(aspera_filepath):
             aspera = False
     return aspera
 
-def asperaretrieve(url, dest_dir, dest_file):
+def asperaretrieve(url, dest_dir, dest_file, handler=None):
     try:
         if not os.path.exists(ASPERA_BIN) or not os.path.exists(ASPERA_PRIVATE_KEY):
             raise FileNotFoundError('Aspera not available. Check your ascp binary path and your private key file is specified correctly')
@@ -404,12 +404,24 @@ def asperaretrieve(url, dest_dir, dest_file):
             key=ASPERA_PRIVATE_KEY,
             speed=ASPERA_SPEED,
         )
-        print(aspera_line)
-        subprocess.call(aspera_line, shell=True) # this blocks so we're fine to wait and return True
+        #print(aspera_line)
+        #subprocess.call(aspera_line, shell=True) # this blocks so we're fine to wait and return True
+        _do_aspera_transfer(aspera_line, handler)
         return True
     except Exception as e:
         sys.stderr.write("Error with Aspera transfer: {0}\n".format(e))
         return False
+
+def _do_aspera_transfer(cmd, handler):
+    p = Popen(cmd, stdout=PIPE, bufsize=1)
+    with p.stdout:
+        for line in iter(p.stdout.readline, b''):
+            if handler and callable(handler):
+                handler(line)
+            else:
+                print line,
+    p.wait()
+    pass
 
 def get_wgs_file_ext(output_format):
     if output_format == EMBL_FORMAT:
