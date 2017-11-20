@@ -70,6 +70,6 @@ def download_unversioned_wgs(dest_dir, accession, output_format):
 
 def check_format(output_format):
     allowed_formats = [utils.EMBL_FORMAT, utils.FASTA_FORMAT, utils.MASTER_FORMAT]
-    if format not in allowed_formats:
+    if output_format not in allowed_formats:
         sys.stderr.write('Please select a valid format for this accession: {0}\n'.format(allowed_formats))
         sys.exit(1)
