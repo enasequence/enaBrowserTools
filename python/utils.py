@@ -26,6 +26,7 @@ import sys
 import urllib
 import urllib2
 import pexpect
+import time
 from datetime import datetime
 import xml.etree.ElementTree as ElementTree
 from subprocess import call, Popen, PIPE
@@ -256,10 +257,10 @@ def get_destination_file(dest_dir, accession, output_format):
         return os.path.join(dest_dir, filename)
     return None
 
-def download_single_record(url, dest_file):
+def download_single_record(url, dest_file, handler=None):
     urllib.urlretrieve(url, dest_file)
 
-def download_record(dest_dir, accession, output_format):
+def download_record(dest_dir, accession, output_format, handler=None):
     try:
         dest_file = get_destination_file(dest_dir, accession, output_format)
         url = get_record_url(accession, output_format)
@@ -280,11 +281,12 @@ def append_record(url, dest_file):
     except Exception:
         return False
 
-def get_ftp_file(ftp_url, dest_dir):
+def get_ftp_file(ftp_url, dest_dir, handler=None):
     try:
         filename = ftp_url.split('/')[-1]
         dest_file = os.path.join(dest_dir, filename)
-        urllib.urlretrieve(ftp_url, dest_file)
+        response = urllib.urlopen(ftp_url)
+        chunk_read(response, file_handle=dest_file, handler=handler)
         return True
     except Exception:
         return False
@@ -293,7 +295,7 @@ def get_aspera_file(aspera_url, dest_dir, handler=None):
     try:
         filename = aspera_url.split('/')[-1]
         dest_file = os.path.join(dest_dir, filename)
-        asperaretrieve(aspera_url, dest_dir, dest_file, handler)
+        asperaretrieve(aspera_url, dest_dir, dest_file, handler=handler)
         return True
     except Exception:
         return False
@@ -305,12 +307,14 @@ def get_md5(filepath):
             hash_md5.update(chunk)
     return hash_md5.hexdigest()
 
-def check_md5(filepath, expected_md5):
+def check_md5(filepath, expected_md5, handler):
     generated_md5 = get_md5(filepath)
     if expected_md5 != generated_md5:
-        print 'MD5 mismatch for downloaded file ' + filepath + '. Deleting file'
-        print ('generated md5', generated_md5)
-        print ('expected md5', expected_md5)
+        if not handler:
+            handler=sys.stdout.write
+        handler('MD5 mismatch for downloaded file ' + filepath + '. Deleting file')
+        handler('Generated md5: %s' % generated_md5)
+        handler('Expected md5: %s' % expected_md5)
         os.remove(filepath)
         return False
     return True
@@ -325,12 +329,13 @@ def file_exists(file_url, dest_dir, md5):
             return True
     return False
 
-def get_ftp_file_with_md5_check(ftp_url, dest_dir, md5):
+def get_ftp_file_with_md5_check(ftp_url, dest_dir, md5, handler=None):
     try:
         filename = ftp_url.split('/')[-1]
         dest_file = os.path.join(dest_dir, filename)
-        urllib.urlretrieve(ftp_url, dest_file)
-        return check_md5(dest_file, md5)
+        response = urllib.urlopen(ftp_url)
+        chunk_read(response, file_handle=dest_file, handler=handler)
+        return check_md5(dest_file, md5, handler=handler)
     except Exception as e:
         sys.stderr.write("Error with FTP transfer: {0}\n".format(e))
         return False
@@ -339,9 +344,9 @@ def get_aspera_file_with_md5_check(aspera_url, dest_dir, md5, handler=None):
     try:
         filename = aspera_url.split('/')[-1]
         dest_file = os.path.join(dest_dir, filename)
-        success = asperaretrieve(aspera_url, dest_dir, dest_file, handler)
+        success = asperaretrieve(aspera_url, dest_dir, dest_file, handler=handler)
         if success:
-            return check_md5(dest_file, md5)
+            return check_md5(dest_file, md5, handler=handler)
         return success
     except Exception as e:
         sys.stderr.write("Error with Aspera transfer: {0}\n".format(e))
@@ -402,8 +407,6 @@ def asperaretrieve(url, dest_dir, dest_file, handler=None):
             key=ASPERA_PRIVATE_KEY,
             speed=ASPERA_SPEED,
         )
-        #sys.stdout.write(aspera_line)
-        #subprocess.call(aspera_line, shell=True) # this blocks so we're fine to wait and return True
         _do_aspera_transfer(aspera_line, handler)
         return True
     except Exception as e:
@@ -417,7 +420,7 @@ def _do_aspera_transfer(cmd, handler):
             if handler and callable(handler):
                 handler(line)
             else:
-                print line,
+                sys.stdout.write(line),
     p.wait()
     pass
 
@@ -595,3 +598,53 @@ def is_empty_dir(target_dir):
 def print_error():
     sys.stderr.write('ERROR: Something unexpected went wrong please try again.\n')
     sys.stderr.write('If problem persists, please contact datasubs@ebi.ac.uk for assistance.\n')
+
+def chunk_report(f, bytes_so_far, chunk_size, total_size, handler=None):
+    global start_time
+    if bytes_so_far == chunk_size:
+        start_time = time.time()
+        return
+    duration = time.time() - start_time
+    progress_size = int(bytes_so_far)
+    speed = int(progress_size / ((1024 * 1024) * duration))
+    percent = int(progress_size * 100 /total_size)
+    line = "\r%s: %0.f%%, %d MB, %d MB/s" % (f, percent, progress_size / (1024 * 1024), speed)
+    
+    if handler and callable(handler):
+        handler(line)
+    else:
+        sys.stdout.write(line)
+
+    if bytes_so_far >= total_size:
+        if handler and callable(handler):
+            handler('\n')
+        else:
+            sys.stdout.write('\n')
+
+def chunk_read(response, file_handle, chunk_size=104857, tick_rate=10, report_hook=chunk_report, handler=None):
+    total_size = response.info().getheader('Content-Length').strip()
+    bytes_so_far = 0
+    
+    with open(file_handle, 'wb') as f:
+        base = os.path.basename(file_handle)
+        if total_size is None: # cannot chunk - no content length
+            f.write(response.content)
+        else:
+            tick = 0
+            total_size = int(total_size)
+            while 1:
+                chunk = response.read(chunk_size)
+                bytes_so_far += len(chunk)
+
+                if not chunk:
+                    break
+
+                f.write(chunk)
+                
+                if report_hook:
+                    if tick == 0 or tick % int(tick_rate) == 0:
+                        tick = 0
+                        report_hook(base, bytes_so_far, chunk_size, total_size, handler)
+                tick += 1
+
+    return bytes_so_far

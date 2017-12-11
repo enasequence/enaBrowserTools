@@ -26,44 +26,44 @@ def append_record(dest_file, accession, output_format):
     url = utils.get_record_url(accession, output_format)
     return utils.append_record(url, dest_file)
 
-def download_sequence(dest_dir, accession, output_format):
+def download_sequence(dest_dir, accession, output_format, handler=None):
     if output_format is None:
         output_format = utils.EMBL_FORMAT
-    success = utils.download_record(dest_dir, accession, output_format)
+    success = utils.download_record(dest_dir, accession, output_format, handler)
     if not success:
         print 'Unable to fetch file for {0}, format {1}'.format(accession, output_format)
     return success
 
-def download_wgs(dest_dir, accession, output_format):
+def download_wgs(dest_dir, accession, output_format, handler=None):
     if utils.is_unversioned_wgs_set(accession):
-        return download_unversioned_wgs(dest_dir, accession, output_format)
+        return download_unversioned_wgs(dest_dir, accession, output_format, handler)
     else:
-        return download_versioned_wgs(dest_dir, accession, output_format)
+        return download_versioned_wgs(dest_dir, accession, output_format, handler)
 
-def download_versioned_wgs(dest_dir, accession, output_format):
+def download_versioned_wgs(dest_dir, accession, output_format, handler=None):
     prefix = accession[:6]
     if output_format is None:
         output_format = utils.EMBL_FORMAT
     public_set_url = utils.get_wgs_ftp_url(prefix, utils.PUBLIC, output_format)
     supp_set_url = utils.get_wgs_ftp_url(prefix, utils.SUPPRESSED, output_format)
-    success = utils.get_ftp_file(public_set_url, dest_dir)
+    success = utils.get_ftp_file(public_set_url, dest_dir, handler)
     if not success:
-        success = utils.get_ftp_file(supp_set_url, dest_dir)
+        success = utils.get_ftp_file(supp_set_url, dest_dir, handler)
     if not success:
         print 'No WGS set file available for {0}, format {1}'.format(accession, output_format)
         print 'Please contact ENA (datasubs@ebi.ac.uk) if you feel this set should be available'
 
-def download_unversioned_wgs(dest_dir, accession, output_format):
+def download_unversioned_wgs(dest_dir, accession, output_format, handler=None):
     prefix = accession[:4]
     if output_format is None:
         output_format = utils.EMBL_FORMAT
     public_set_url = utils.get_nonversioned_wgs_ftp_url(prefix, utils.PUBLIC, output_format)
     if public_set_url is not None:
-        utils.get_ftp_file(public_set_url, dest_dir)
+        utils.get_ftp_file(public_set_url, dest_dir, handler)
     else:
         supp_set_url = utils.get_nonversioned_wgs_ftp_url(prefix, utils.SUPPRESSED, output_format)
         if supp_set_url is not None:
-            utils.get_ftp_file(supp_set_url, dest_dir)
+            utils.get_ftp_file(supp_set_url, dest_dir, handler)
         else:
             print 'No WGS set file available for {0}, format {1}'.format(accession, output_format)
             print 'Please contact ENA (datasubs@ebi.ac.uk) if you feel this set should be available'
