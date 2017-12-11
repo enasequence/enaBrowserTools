@@ -38,11 +38,11 @@ def check_analysis_format(output_format):
         )
         sys.exit(1)
 
-def attempt_file_download(file_url, dest_dir, md5, aspera):
+def attempt_file_download(file_url, dest_dir, md5, aspera, handler=None):
     if md5 is not None:
         print('Downloading file with md5 check:' + file_url)
         if aspera:
-            return utils.get_aspera_file_with_md5_check(file_url, dest_dir, md5)
+            return utils.get_aspera_file_with_md5_check(file_url, dest_dir, md5, handler)
         else:
             return utils.get_ftp_file_with_md5_check('ftp://' + file_url, dest_dir, md5)
     print('Downloading file:' + file_url)
@@ -50,12 +50,12 @@ def attempt_file_download(file_url, dest_dir, md5, aspera):
         return utils.get_aspera_file(file_url, dest_dir)
     return utils.get_ftp_file('ftp://' + file_url, dest_dir)
 
-def download_file(file_url, dest_dir, md5, aspera):
+def download_file(file_url, dest_dir, md5, aspera, handler=None):
     if utils.file_exists(file_url, dest_dir, md5):
         return
-    success = attempt_file_download(file_url, dest_dir, md5, aspera)
+    success = attempt_file_download(file_url, dest_dir, md5, aspera, handler)
     if not success:
-        success = attempt_file_download(file_url, dest_dir, md5, aspera)
+        success = attempt_file_download(file_url, dest_dir, md5, aspera, handler)
     if not success:
         print('Failed to download file after two attempts')
 
@@ -74,7 +74,7 @@ def download_experiment_meta(run_accession, dest_dir):
         break
     download_meta(experiment_accession, dest_dir)
 
-def download_files(accession, output_format, dest_dir, fetch_index, fetch_meta, aspera):
+def download_files(accession, output_format, dest_dir, fetch_index, fetch_meta, aspera, handler=None):
     accession_dir = os.path.join(dest_dir, accession)
     utils.create_dir(accession_dir)
     # download experiment xml
@@ -114,10 +114,10 @@ def download_files(accession, output_format, dest_dir, fetch_index, fetch_meta, 
             file_url = filelist[i]
             md5 = md5list[i]
             if file_url != '':
-                download_file(file_url, target_dir, md5, aspera)
+                download_file(file_url, target_dir, md5, aspera, handler)
         for index_file in indexlist:
             if index_file != '':
-                download_file(index_file, target_dir, None, aspera)
+                download_file(index_file, target_dir, None, aspera, handler)
     if utils.is_empty_dir(target_dir):
         print('Deleting directory ' + os.path.basename(target_dir))
         os.rmdir(target_dir)

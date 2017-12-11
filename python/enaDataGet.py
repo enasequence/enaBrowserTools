@@ -50,6 +50,9 @@ def set_parser():
     parser.add_argument('-as', '--aspera-settings', default=None,
                     help="""Use the provided settings file, will otherwise check
                         for environment variable or default settings file location.""")
+    parser.add_argument('-r', '--redirect-handler', default=None,
+                        choices=['queue', 'file'],
+                        help="""File download progress handler. Specify an output handler to process the download progress. Default is no handler (output is printed to stdout). 'queue' redirects all output to a queue handler, such as RabbitMQ. 'file' redirects to a file handle (default is [current_file_download.log]).""")
     parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.4.1')
     return parser
 
@@ -66,6 +69,7 @@ if __name__ == '__main__':
     fetch_index = args.index
     aspera = args.aspera
     aspera_settings = args.aspera_settings
+    handler = args.redirect_handler
 
     if aspera or aspera_settings is not None:
         aspera = utils.set_aspera(aspera_settings)
@@ -85,7 +89,7 @@ if __name__ == '__main__':
         elif utils.is_analysis(accession):
             if output_format is not None:
                 readGet.check_read_format(output_format)
-            readGet.download_files(accession, output_format, dest_dir, fetch_index, fetch_meta, aspera)
+            readGet.download_files(accession, output_format, dest_dir, fetch_index, fetch_meta, aspera, handler)
         elif utils.is_run(accession) or utils.is_experiment(accession):
             if output_format is not None:
                 readGet.check_read_format(output_format)
