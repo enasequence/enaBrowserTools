@@ -51,8 +51,8 @@ def set_parser():
                     help="""Use the provided settings file, will otherwise check
                         for environment variable or default settings file location.""")
     parser.add_argument('-r', '--redirect-handler', default=None,
-                        choices=['stdout', 'file'],
-                        help="""File download progress handler. Specify an output handler to process the download progress. Default is no handler (output is swallowed). 'stdout' redirects all output to standard out. 'file' redirects to a file handle (default is [current_file_download.log]).""")
+                        choices=['queue', 'file'],
+                        help="""File download progress handler. Specify an output handler to process the download progress. Default is no handler (output is printed to stdout). 'queue' redirects all output to a queue handler, such as RabbitMQ. 'file' redirects to a file handle (default is [current_file_download.log]).""")
     parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.4.1')
     return parser
 
