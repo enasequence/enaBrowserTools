@@ -27,6 +27,7 @@ import urllib
 import urllib2
 import pexpect
 import time
+import shlex
 from datetime import datetime
 import xml.etree.ElementTree as ElementTree
 from subprocess import call, Popen, PIPE
@@ -414,7 +415,7 @@ def asperaretrieve(url, dest_dir, dest_file, handler=None):
         return False
 
 def _do_aspera_transfer(cmd, handler):
-    p = Popen(cmd, stdout=PIPE, bufsize=1)
+    p = Popen(shlex.split(cmd), stdout=PIPE, bufsize=1)
     with p.stdout:
         for line in iter(p.stdout.readline, b''):
             if handler and callable(handler):
