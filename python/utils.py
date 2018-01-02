@@ -28,9 +28,10 @@ import urllib2
 import pexpect
 import time
 import shlex
+import json
 from datetime import datetime
 import xml.etree.ElementTree as ElementTree
-from subprocess import call, Popen, PIPE
+from subprocess import call, Popen, PIPE, STDOUT
 
 from ConfigParser import SafeConfigParser
 
@@ -408,14 +409,62 @@ def asperaretrieve(url, dest_dir, dest_file, handler=None):
             key=ASPERA_PRIVATE_KEY,
             speed=ASPERA_SPEED,
         )
-        _do_aspera_transfer(aspera_line, handler)
+#        _do_aspera_transfer(aspera_line, handler)
+        _do_aspera_pexpect(aspera_line, handler)
         return True
     except Exception as e:
         sys.stderr.write("Error with Aspera transfer: {0}\n".format(e))
         return False
 
+def _do_aspera_pexpect(cmd, handler):
+    thread = pexpect.spawn(cmd, timeout=None)
+    cpl = thread.compile_pattern_list([pexpect.EOF, '(.+)'])
+    started = 0
+
+    while True:
+        i = thread.expect_list(cpl, timeout=None)
+        if i == 0:
+            if started == 0:
+                if handler and callable(handler):
+                    handler("Error initiating transfer")
+                else:
+                    sys.stderr.write("Error initiating transfer")
+            break
+        elif i == 1:
+            started = 1
+            output = dict()
+            pexp_match = thread.match.group(1)
+            prev_file = ''
+            tokens_to_match = ["Mb/s"]
+            units_to_match = ["KB", "MB", "GB"]
+            rates_to_match = ["Kb/s", "kb/s", "Mb/s", "mb/s", "Gb/s", "gb/s"]
+            end_of_transfer = False
+            if any(tm in pexp_match.decode("utf-8") for tm in tokens_to_match):
+                tokens = pexp_match.decode("utf-8").split(" ")
+                if 'ETA' in tokens:
+                    pct_completed = [x for x in tokens if len(x) > 1 and x[-1] == '%']
+                    if pct_completed:
+                        output["pct_completed"] = pct_completed[0][:-1]
+
+                        bytes_transferred = [x for x in tokens if len(x) > 2 and x[-2:] in units_to_match]
+                        if bytes_transferred:
+                            output["bytes_transferred"] = bytes_transferred[0]
+
+                        transfer_rate = [x for x in tokens if len(x) > 4 and x[-4:] in rates_to_match]
+                        if transfer_rate:
+                            output["transfer_rate"] = transfer_rate[0]
+
+                        if handler and callable(handler):
+                            handler(json.dumps(output))
+                        else:
+                            sys.stdout.write("%s%% transferred, %s, %s\n" % (output["pct_completed"], output["bytes_transferred"], output["transfer_rate"])),
+    thread.close()
+
 def _do_aspera_transfer(cmd, handler):
-    p = Popen(shlex.split(cmd), stdout=PIPE, bufsize=1)
+    p = Popen(shlex.split(cmd),
+              stdout=PIPE,
+              stderr=STDOUT,
+              bufsize=1)
     with p.stdout:
         for line in iter(p.stdout.readline, b''):
             if handler and callable(handler):
