@@ -23,9 +23,9 @@ import argparse
 import utils
 
 
-def append_record(dest_file, accession, output_format):
+def write_record(dest_file, accession, output_format):
     url = utils.get_record_url(accession, output_format)
-    return utils.append_record(url, dest_file)
+    return utils.write_record(url, dest_file)
 
 def download_sequence(dest_dir, accession, output_format):
     if output_format is None:

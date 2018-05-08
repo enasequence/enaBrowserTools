@@ -17,6 +17,12 @@ Both Python 2 and Python 3 scripts are available.  The Python 2 scripts can be f
 
 To run these scripts you will need to have Python installed.  You can download either Python 2 or Python 3 from [here](https://www.python.org/downloads/). If you already have Python installed, you can find out which version when you start the python interpreter.  If using Python 2, we suggest you upgrade to the latest version if you don't already have it: 2.7.
 
+Note that EBI now uses HTTPS servers. This can create a problem when using Python 3 on a Mac due to an oft-missed
+installation step. Please run the "Install Certificates.command" command to ensure your Python 3 installation on
+the Mac can correctly authenticate against the servers. To do this, run the following from a terminal window, updating
+the Python version with the correct version of Python 3 that you have installed:
+open "/Applications/Python 3.6/Install Certificates.command"
+
 ## Installing and running the scripts
 
 Download the [latest release](https://github.com/enasequence/enaBrowserTools/releases/latest) and extract it to the preferred location on your computer. You will now have the enaBrowserTools folder, containing both the python 2 and 3 option scripts.  If you are using a Unix/Linux or Mac computer, we suggest you add the following aliases to your .bashrc or .bash_profile file. Where INSTALLATION_DIR is the location where you have saved the enaBrowserTools to and PYTHON_CHOICE will depend on whether you are using the Python 2 or Python 3 scripts.
@@ -107,11 +113,13 @@ optional arguments:
                         File format required. Format requested must be
                         permitted for data type selected. sequence, assembly
                         and wgs accessions: embl(default) and fasta formats.
-                        read group: submitted, fastq and sra
-                        formats. analysis group: submitted only.
+                        read group: submitted, fastq and sra formats. analysis
+                        group: submitted only.
   -d DEST, --dest DEST  Destination directory (default is current running
                         directory)
   -w, --wgs             Download WGS set for each assembly if available
+                        (default is false)
+  -e, --extract-wgs     Extract WGS scaffolds for each assembly if available
                         (default is false)
   -m, --meta            Download read or analysis XML in addition to data
                         files (default is false)
@@ -141,7 +149,7 @@ usage: enaGroupGet [-h] [-g {sequence,wgs,assembly,read,analysis}]
                    [-i] [-a] [-as ASPERA_SETTINGS] [-t] [-v]
                    accession
 
-Download data for a given study or sample
+Download data for a given study or sample, or (for sequence and assembly) taxon
 
 positional arguments:
   accession             Study or sample accession or NCBI tax ID to fetch data
@@ -162,6 +170,8 @@ optional arguments:
                         directory)
   -w, --wgs             Download WGS set for each assembly if available
                         (default is false)
+  -e, --extract-wgs     Extract WGS scaffolds for each assembly if available
+                        (default is false)
   -m, --meta            Download read or analysis XML in addition to data
                         files (default is false)
   -i, --index           Download CRAM index files with submitted CRAM files,
@@ -180,10 +190,10 @@ optional arguments:
 
 # Tips
 
-From version 1.4, when downloading read data if you use the default format (that is, don't use the format option), the scripts will look for available files in the following priority: submitted, sra, fastq. 
+From version 1.4, when downloading read data if you use the default format (that is, don't use the format option), the scripts will look for available files in the following priority: submitted, sra, fastq.
 
 A word of advice for read formats:
-- submitted: only read data submitted to ENA have files available as submitted by the user. 
+- submitted: only read data submitted to ENA have files available as submitted by the user.
 - sra:  this is the NCBI SRA format, and is the format in which all NCBI/DDBJ data is mirrored to ENA.
 - fastq:  not all submitted format files can be converted to FASTQ
 
