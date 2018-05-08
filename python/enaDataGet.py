@@ -40,6 +40,8 @@ def set_parser():
                         help='Destination directory (default is current running directory)')
     parser.add_argument('-w', '--wgs', action='store_true',
                         help='Download WGS set for each assembly if available (default is false)')
+    parser.add_argument('-e', '--extract-wgs', action='store_true',
+                        help='Extract WGS scaffolds for each assembly if available (default is false)')
     parser.add_argument('-m', '--meta', action='store_true',
                         help='Download read or analysis XML in addition to data files (default is false)')
     parser.add_argument('-i', '--index', action='store_true',
@@ -50,7 +52,7 @@ def set_parser():
     parser.add_argument('-as', '--aspera-settings', default=None,
                     help="""Use the provided settings file, will otherwise check
                         for environment variable or default settings file location.""")
-    parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.4.1')
+    parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.5')
     return parser
 
 
@@ -62,6 +64,7 @@ if __name__ == '__main__':
     output_format = args.format
     dest_dir = args.dest
     fetch_wgs = args.wgs
+    extract_wgs = args.extract_wgs
     fetch_meta = args.meta
     fetch_index = args.index
     aspera = args.aspera
@@ -93,7 +96,7 @@ if __name__ == '__main__':
         elif utils.is_assembly(accession):
             if output_format is not None:
                 assemblyGet.check_format(output_format)
-            assemblyGet.download_assembly(dest_dir, accession, output_format, fetch_wgs)
+            assemblyGet.download_assembly(dest_dir, accession, output_format, fetch_wgs, extract_wgs)
         else:
             sys.stderr.write('ERROR: Invalid accession provided\n')
             sys.exit(1)

@@ -20,6 +20,7 @@
 import os
 import sys
 import argparse
+import gzip
 import xml.etree.ElementTree as ElementTree
 
 import utils
@@ -70,31 +71,72 @@ def parse_sequence_report(local_sequence_report):
     patch_list = [l.split('\t')[0] for l in lines[1:] if PATCH in l.split('\t')[3]]
     return (replicon_list, unlocalised_list, unplaced_list, patch_list)
 
+def extract_wgs_sequences(accession_list):
+    wgs_sequences = [a for a in accession_list if utils.is_wgs_sequence(a)]
+    other_sequences = [a for a in accession_list if not utils.is_wgs_sequence(a)]
+    return wgs_sequences, other_sequences
+
 def download_sequence_set(accession_list, mol_type, assembly_dir, output_format, quiet):
     failed_accessions = []
-    if len(accession_list) > 0:
+    count = 0
+    sequence_cnt = len(accession_list)
+    divisor = utils.get_divisor(sequence_cnt)
+    if sequence_cnt > 0:
         if not quiet:
             print ('fetching sequences: ' + mol_type)
-        target_file = os.path.join(assembly_dir, utils.get_filename(mol_type, output_format))
+        target_file_path = os.path.join(assembly_dir, utils.get_filename(mol_type, output_format))
+        target_file = open(target_file_path, 'w')
         for accession in accession_list:
-            success = sequenceGet.append_record(target_file, accession, output_format)
+            success = sequenceGet.write_record(target_file, accession, output_format)
             if not success:
                 failed_accessions.append(accession)
+            else:
+                count += 1
+                if count % divisor == 0 and not quiet:
+                    print ('downloaded {0} of {1} sequences'.format(count, sequence_cnt))
+        if not quiet:
+            print ('downloaded {0} of {1} sequences'.format(count, sequence_cnt))
+        target_file.close()
     elif not quiet:
         print ('no sequences: ' + mol_type)
     if len(failed_accessions) > 0:
         print ('Failed to fetch following {0}, format {1}'.format(mol_type, output_format))
-        print (failed_accessions.join(','))
+        print (','.join(failed_accessions))
 
 def download_sequences(sequence_report, assembly_dir, output_format, quiet):
     local_sequence_report = os.path.join(assembly_dir, sequence_report)
     replicon_list, unlocalised_list, unplaced_list, patch_list = parse_sequence_report(local_sequence_report)
+    wgs_scaffolds, other_unlocalised = extract_wgs_sequences(unlocalised_list)
+    wgs_unplaced, other_unplaced = extract_wgs_sequences(unplaced_list)
     download_sequence_set(replicon_list, REPLICON, assembly_dir, output_format, quiet)
-    download_sequence_set(unlocalised_list, UNLOCALISED, assembly_dir, output_format, quiet)
-    download_sequence_set(unplaced_list, UNPLACED, assembly_dir, output_format, quiet)
+    download_sequence_set(other_unlocalised, UNLOCALISED, assembly_dir, output_format, quiet)
+    download_sequence_set(other_unplaced, UNPLACED, assembly_dir, output_format, quiet)
     download_sequence_set(patch_list, PATCH, assembly_dir, output_format, quiet)
+    wgs_scaffolds.extend(wgs_unplaced)
+    return wgs_scaffolds
 
-def download_assembly(dest_dir, accession, output_format, fetch_wgs, quiet=False):
+def extract_wgs_scaffolds(assembly_dir, wgs_scaffolds, wgs_set, output_format, quiet):
+    if not quiet:
+        print ('extracting {0} WGS scaffolds from WGS set file'.format(len(wgs_scaffolds)))
+    accs = [a.split('.')[0] for a in wgs_scaffolds]
+    wgs_file_path = os.path.join(assembly_dir, wgs_set + utils.get_wgs_file_ext(output_format))
+    target_file_path = os.path.join(assembly_dir, utils.get_filename('wgs_scaffolds', output_format))
+    write_line = False
+    target_file = open(target_file_path, 'w')
+    with gzip.open(wgs_file_path, 'rb') as f:
+        for line in f:
+            if utils.record_start_line(line, output_format):
+                if utils.extract_acc_from_line(line, output_format) in accs:
+                    write_line = True
+                else:
+                    write_line = False
+                    target_file.flush()
+            if write_line:
+                target_file.write(line)
+    target_file.flush()
+    target_file.close()
+
+def download_assembly(dest_dir, accession, output_format, fetch_wgs, extract_wgs, quiet=False):
     if output_format is None:
         output_format = utils.EMBL_FORMAT
     assembly_dir = os.path.join(dest_dir, accession)
@@ -108,11 +150,23 @@ def download_assembly(dest_dir, accession, output_format, fetch_wgs, quiet=False
     # download sequence report
     if sequence_report is not None:
         has_sequence_report = utils.get_ftp_file(sequence_report, assembly_dir)
+    # parse sequence report and download sequences
+    wgs_scaffolds = []
+    wgs_scaffold_cnt = 0
+    if has_sequence_report:
+        wgs_scaffolds = download_sequences(sequence_report.split('/')[-1], assembly_dir, output_format, quiet)
+        wgs_scaffold_cnt = len(wgs_scaffolds)
+        if wgs_scaffold_cnt > 0:
+            if not quiet:
+                print ('Assembly contains {} WGS scaffolds, will fetch WGS set'.format(wgs_scaffold_cnt))
+            fetch_wgs = True
+    else:
+        fetch_wgs = True
     # download wgs set if needed
     if wgs_set is not None and fetch_wgs:
         if not quiet:
             print ('fetching wgs set')
         sequenceGet.download_wgs(assembly_dir, wgs_set, output_format)
-    # parse sequence report and download sequences
-    if has_sequence_report:
-        download_sequences(sequence_report.split('/')[-1], assembly_dir, output_format, quiet)
+        # extract wgs scaffolds from WGS file
+        if wgs_scaffold_cnt > 0 and extract_wgs:
+            extract_wgs_scaffolds(assembly_dir, wgs_scaffolds, wgs_set, output_format, quiet)
