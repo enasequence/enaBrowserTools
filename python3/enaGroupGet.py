@@ -117,7 +117,7 @@ def download_sequence_group(accession, output_format, group_dir, subtree):
     print ('Downloading sequences')
     update_accs = []
     dest_file_path = os.path.join(group_dir, utils.get_filename(accession + '_sequences', output_format))
-    dest_file = open(dest_file_path, 'w')
+    dest_file = open(dest_file_path, 'wb')
     #sequence update
     update_accs = download_sequence_result(dest_file, group_dir, utils.SEQUENCE_UPDATE_RESULT, accession, subtree, update_accs)
     #sequence release

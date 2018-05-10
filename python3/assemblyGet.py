@@ -83,9 +83,9 @@ def download_sequence_set(accession_list, mol_type, assembly_dir, output_format,
     divisor = utils.get_divisor(sequence_cnt)
     if sequence_cnt > 0:
         if not quiet:
-            print ('fetching sequences: ' + mol_type)
+            print ('fetching {0} sequences: {1}'.format(sequence_cnt, mol_type))
         target_file_path = os.path.join(assembly_dir, utils.get_filename(mol_type, output_format))
-        target_file = open(target_file_path, 'w')
+        target_file = open(target_file_path, 'wb')
         for accession in accession_list:
             success = sequenceGet.write_record(target_file, accession, output_format)
             if not success:
