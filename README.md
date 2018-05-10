@@ -164,6 +164,8 @@ optional arguments:
                         (default is false)
   -e, --extract-wgs     Extract WGS scaffolds for each assembly if available
                         (default is false)
+  -exp, --expanded      Expand CON scaffolds when downloading embl format
+                        (default is false)
   -m, --meta            Download read or analysis XML in addition to data
                         files (default is false)
   -i, --index           Download CRAM index files with submitted CRAM files,
@@ -214,6 +216,8 @@ optional arguments:
   -w, --wgs             Download WGS set for each assembly if available
                         (default is false)
   -e, --extract-wgs     Extract WGS scaffolds for each assembly if available
+                        (default is false)
+  -exp, --expanded      Expand CON scaffolds when downloading embl format
                         (default is false)
   -m, --meta            Download read or analysis XML in addition to data
                         files (default is false)

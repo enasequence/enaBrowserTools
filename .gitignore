@@ -1,3 +1,7 @@
 ### Mac ###
 .DS_Store
 **/.DS_Store
+
+### compiled python ###
+python/*.pyc
+python3/__pycache__
