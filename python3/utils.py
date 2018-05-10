@@ -283,7 +283,7 @@ def write_record(url, dest_file):
         response = urlrequest.urlopen(url)
         linenum = 1
         for line in response:
-            if linenum == 1 and line.startswith('Entry:'):
+            if linenum == 1 and line.startswith(b'Entry:'):
                 return False
             chars = dest_file.write(line)
             linenum += 1
