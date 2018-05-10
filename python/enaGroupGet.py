@@ -44,6 +44,8 @@ def set_parser():
                         help='Download WGS set for each assembly if available (default is false)')
     parser.add_argument('-e', '--extract-wgs', action='store_true',
                         help='Extract WGS scaffolds for each assembly if available (default is false)')
+    parser.add_argument('-exp', '--expanded', action='store_true',
+                        help='Expand CON scaffolds when downloading embl format (default is false)')
     parser.add_argument('-m', '--meta', action='store_true',
                         help='Download read or analysis XML in addition to data files (default is false)')
     parser.add_argument('-i', '--index', action='store_true',
@@ -68,18 +70,18 @@ def download_report(group, result, accession, temp_file, subtree):
     f.flush()
     f.close()
 
-def download_data(group, data_accession, output_format, group_dir, fetch_wgs, extract_wgs, fetch_meta, fetch_index, aspera):
+def download_data(group, data_accession, output_format, group_dir, fetch_wgs, extract_wgs, expanded, fetch_meta, fetch_index, aspera):
     if group == utils.WGS:
         print 'Fetching ' + data_accession[:6]
         sequenceGet.download_wgs(group_dir, data_accession[:6], output_format)
     else:
         print 'Fetching ' + data_accession
         if group == utils.ASSEMBLY:
-            assemblyGet.download_assembly(group_dir, data_accession, output_format, fetch_wgs, extract_wgs, True)
+            assemblyGet.download_assembly(group_dir, data_accession, output_format, fetch_wgs, extract_wgs, expanded, True)
         elif group in [utils.READ, utils.ANALYSIS]:
             readGet.download_files(data_accession, output_format, group_dir, fetch_index, fetch_meta, aspera)
 
-def download_data_group(group, accession, output_format, group_dir, fetch_wgs, extract_wgs, fetch_meta, fetch_index, aspera, subtree):
+def download_data_group(group, accession, output_format, group_dir, fetch_wgs, extract_wgs, fetch_meta, fetch_index, aspera, subtree, expanded):
     temp_file_path = os.path.join(group_dir, accession + '_temp.txt')
     download_report(group, utils.get_group_result(group), accession, temp_file_path, subtree)
     header = True
@@ -89,10 +91,10 @@ def download_data_group(group, accession, output_format, group_dir, fetch_wgs, e
                 header = False
                 continue
             data_accession = line.strip()
-            download_data(group, data_accession, output_format, group_dir, fetch_wgs, extract_wgs, fetch_meta, fetch_index, aspera)
+            download_data(group, data_accession, output_format, group_dir, fetch_wgs, extract_wgs, expanded, fetch_meta, fetch_index, aspera)
     os.remove(temp_file_path)
 
-def download_sequence_result(dest_file, group_dir, result, accession, subtree, update_accs):
+def download_sequence_result(dest_file, group_dir, result, accession, subtree, update_accs, expanded):
     temp_file_path = os.path.join(group_dir, 'temp.txt')
     download_report(utils.SEQUENCE, result, accession, temp_file_path, subtree)
     header = True
@@ -110,29 +112,29 @@ def download_sequence_result(dest_file, group_dir, result, accession, subtree, u
                 if data_accession not in update_accs:
                     write_record = True
             if write_record:
-                sequenceGet.write_record(dest_file, data_accession, output_format)
+                sequenceGet.write_record(dest_file, data_accession, output_format, expanded)
                 dest_file.flush()
     os.remove(temp_file_path)
     return update_accs
 
-def download_sequence_group(accession, output_format, group_dir, subtree):
+def download_sequence_group(accession, output_format, group_dir, subtree, expanded):
     print 'Downloading sequences'
     update_accs = []
     dest_file_path = os.path.join(group_dir, utils.get_filename(accession + '_sequences', output_format))
     dest_file = open(dest_file_path, 'w')
     #sequence update
-    update_accs = download_sequence_result(dest_file, group_dir, utils.SEQUENCE_UPDATE_RESULT, accession, subtree, update_accs)
+    update_accs = download_sequence_result(dest_file, group_dir, utils.SEQUENCE_UPDATE_RESULT, accession, subtree, update_accs, expanded)
     #sequence release
-    update_accs = download_sequence_result(dest_file, group_dir, utils.SEQUENCE_RELEASE_RESULT, accession, subtree)
+    update_accs = download_sequence_result(dest_file, group_dir, utils.SEQUENCE_RELEASE_RESULT, accession, subtree, update_accs, expanded)
     dest_file.close()
 
-def download_group(accession, group, output_format, dest_dir, fetch_wgs, extract_wgs, fetch_meta, fetch_index, aspera, subtree):
+def download_group(accession, group, output_format, dest_dir, fetch_wgs, extract_wgs, fetch_meta, fetch_index, aspera, subtree, expanded):
     group_dir = os.path.join(dest_dir, accession)
     utils.create_dir(group_dir)
     if group == utils.SEQUENCE:
-        download_sequence_group(accession, output_format, group_dir, subtree)
+        download_sequence_group(accession, output_format, group_dir, subtree, expanded)
     else:
-        download_data_group(group, accession, output_format, group_dir, fetch_wgs, extract_wgs, fetch_meta, fetch_index, aspera, subtree)
+        download_data_group(group, accession, output_format, group_dir, fetch_wgs, extract_wgs, fetch_meta, fetch_index, aspera, subtree, expanded)
 
 
 if __name__ == '__main__':
@@ -145,6 +147,7 @@ if __name__ == '__main__':
     dest_dir = args.dest
     fetch_wgs = args.wgs
     extract_wgs = args.extract_wgs
+    expanded = args.expanded
     fetch_meta = args.meta
     fetch_index = args.index
     aspera = args.aspera
@@ -182,7 +185,7 @@ if __name__ == '__main__':
         if utils.is_taxid(accession) and group in ['read', 'analysis']:
             print 'Sorry, tax ID retrieval not yet supported for read and analysis'
             sys.exit(1)
-        download_group(accession, group, output_format, dest_dir, fetch_wgs, extract_wgs, fetch_meta, fetch_index, aspera, subtree)
+        download_group(accession, group, output_format, dest_dir, fetch_wgs, extract_wgs, fetch_meta, fetch_index, aspera, subtree, expanded)
         print 'Completed'
     except Exception:
         utils.print_error()

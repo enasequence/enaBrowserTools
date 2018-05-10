@@ -75,7 +75,7 @@ def extract_wgs_sequences(accession_list):
     other_sequences = [a for a in accession_list if not utils.is_wgs_sequence(a)]
     return wgs_sequences, other_sequences
 
-def download_sequence_set(accession_list, mol_type, assembly_dir, output_format, quiet):
+def download_sequence_set(accession_list, mol_type, assembly_dir, output_format, expanded, quiet):
     failed_accessions = []
     count = 0
     sequence_cnt = len(accession_list)
@@ -86,7 +86,7 @@ def download_sequence_set(accession_list, mol_type, assembly_dir, output_format,
         target_file_path = os.path.join(assembly_dir, utils.get_filename(mol_type, output_format))
         target_file = open(target_file_path, 'w')
         for accession in accession_list:
-            success = sequenceGet.write_record(target_file, accession, output_format)
+            success = sequenceGet.write_record(target_file, accession, output_format, expanded)
             if not success:
                 failed_accessions.append(accession)
             else:
@@ -102,15 +102,15 @@ def download_sequence_set(accession_list, mol_type, assembly_dir, output_format,
         print 'Failed to fetch following {0}, format {1}'.format(mol_type, output_format)
         print ','.join(failed_accessions)
 
-def download_sequences(sequence_report, assembly_dir, output_format, quiet):
+def download_sequences(sequence_report, assembly_dir, output_format, expanded, quiet):
     local_sequence_report = os.path.join(assembly_dir, sequence_report)
     replicon_list, unlocalised_list, unplaced_list, patch_list = parse_sequence_report(local_sequence_report)
-    wgs_scaffolds, other_unlocalised = _sequences(unlocalised_list)
+    wgs_scaffolds, other_unlocalised = extract_wgs_sequences(unlocalised_list)
     wgs_unplaced, other_unplaced = extract_wgs_sequences(unplaced_list)
-    download_sequence_set(replicon_list, REPLICON, assembly_dir, output_format, quiet)
-    download_sequence_set(other_unlocalised, UNLOCALISED, assembly_dir, output_format, quiet)
-    download_sequence_set(other_unplaced, UNPLACED, assembly_dir, output_format, quiet)
-    download_sequence_set(patch_list, PATCH, assembly_dir, output_format, quiet)
+    download_sequence_set(replicon_list, REPLICON, assembly_dir, output_format, expanded, quiet)
+    download_sequence_set(other_unlocalised, UNLOCALISED, assembly_dir, output_format, expanded, quiet)
+    download_sequence_set(other_unplaced, UNPLACED, assembly_dir, output_format, expanded, quiet)
+    download_sequence_set(patch_list, PATCH, assembly_dir, output_format, expanded, quiet)
     wgs_scaffolds.extend(wgs_unplaced)
     return wgs_scaffolds
 
@@ -135,7 +135,7 @@ def extract_wgs_scaffolds(assembly_dir, wgs_scaffolds, wgs_set, output_format, q
     target_file.flush()
     target_file.close()
 
-def download_assembly(dest_dir, accession, output_format, fetch_wgs, extract_wgs, quiet=False):
+def download_assembly(dest_dir, accession, output_format, fetch_wgs, extract_wgs, expanded, quiet=False):
     if output_format is None:
         output_format = utils.EMBL_FORMAT
     assembly_dir = os.path.join(dest_dir, accession)
@@ -153,7 +153,7 @@ def download_assembly(dest_dir, accession, output_format, fetch_wgs, extract_wgs
     wgs_scaffolds = []
     wgs_scaffold_cnt = 0
     if has_sequence_report:
-        wgs_scaffolds = download_sequences(sequence_report.split('/')[-1], assembly_dir, output_format, quiet)
+        wgs_scaffolds = download_sequences(sequence_report.split('/')[-1], assembly_dir, output_format, expanded, quiet)
         wgs_scaffold_cnt = len(wgs_scaffolds)
         if wgs_scaffold_cnt > 0:
             if not quiet:

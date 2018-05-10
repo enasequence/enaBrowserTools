@@ -23,14 +23,16 @@ import argparse
 import utils
 
 
-def write_record(dest_file, accession, output_format):
+def write_record(dest_file, accession, output_format, expanded=False):
     url = utils.get_record_url(accession, output_format)
+    if expanded:
+        url = url + '&expanded=true'
     return utils.write_record(url, dest_file)
 
-def download_sequence(dest_dir, accession, output_format):
+def download_sequence(dest_dir, accession, output_format, expanded):
     if output_format is None:
         output_format = utils.EMBL_FORMAT
-    success = utils.download_record(dest_dir, accession, output_format)
+    success = utils.download_record(dest_dir, accession, output_format, expanded)
     if not success:
         print ('Unable to fetch file for {0}, format {1}'.format(accession, output_format))
 
