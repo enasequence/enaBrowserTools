@@ -40,6 +40,10 @@ def set_parser():
                         help='Destination directory (default is current running directory)')
     parser.add_argument('-w', '--wgs', action='store_true',
                         help='Download WGS set for each assembly if available (default is false)')
+    parser.add_argument('-e', '--extract-wgs', action='store_true',
+                        help='Extract WGS scaffolds for each assembly if available (default is false)')
+    parser.add_argument('-exp', '--expanded', action='store_true',
+                        help='Expand CON scaffolds when downloading embl format (default is false)')
     parser.add_argument('-m', '--meta', action='store_true',
                         help='Download read or analysis XML in addition to data files (default is false)')
     parser.add_argument('-i', '--index', action='store_true',
@@ -53,7 +57,7 @@ def set_parser():
     parser.add_argument('-r', '--redirect-handler', default=None,
                         choices=['stdout', 'file'],
                         help="""File download progress handler. Specify an output handler to process the download progress. Default is no handler (output is swallowed). 'stdout' redirects all output to standard out. 'file' redirects to a file handle (default is [current_file_download.log]).""")
-    parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.4.1')
+    parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.5')
     return parser
 
 
@@ -65,6 +69,8 @@ if __name__ == '__main__':
     output_format = args.format
     dest_dir = args.dest
     fetch_wgs = args.wgs
+    extract_wgs = args.extract_wgs
+    expanded = args.expanded
     fetch_meta = args.meta
     fetch_index = args.index
     aspera = args.aspera
@@ -85,7 +91,7 @@ if __name__ == '__main__':
         elif utils.is_sequence(accession):
             if output_format is not None:
                 sequenceGet.check_format(output_format)
-            sequenceGet.download_sequence(dest_dir, accession, output_format, handler)
+            sequenceGet.download_sequence(dest_dir, accession, output_format, expanded, handler)
         elif utils.is_analysis(accession):
             if output_format is not None:
                 readGet.check_read_format(output_format)
@@ -97,7 +103,7 @@ if __name__ == '__main__':
         elif utils.is_assembly(accession):
             if output_format is not None:
                 assemblyGet.check_format(output_format)
-            assemblyGet.download_assembly(dest_dir, accession, output_format, fetch_wgs, handler)
+            assemblyGet.download_assembly(dest_dir, accession, output_format, fetch_wgs, extract_wgs, expanded, handler)
         else:
             sys.stderr.write('ERROR: Invalid accession provided\n')
             sys.exit(1)

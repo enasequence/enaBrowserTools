@@ -111,7 +111,7 @@ INDEX_ASPERA_FIELD = 'cram_index_aspera'
 
 sequence_pattern_1 = re.compile('^[A-Z]{1}[0-9]{5}(\.[0-9]+)?$')
 sequence_pattern_2 = re.compile('^[A-Z]{2}[0-9]{6}(\.[0-9]+)?$')
-sequence_pattern_3 = re.compile('^[A-Z]{4}[0-9]{8,9}(\.[0-9]+)?$')
+wgs_sequence_pattern = re.compile('^[A-Z]{4}[0-9]{8,9}(\.[0-9]+)?$')
 coding_pattern = re.compile('^[A-Z]{3}[0-9]{5}(\.[0-9]+)?$')
 wgs_prefix_pattern = re.compile('^[A-Z]{4}[0-9]{2}$')
 wgs_master_pattern = re.compile('^[A-Z]{4}[0-9]{2}[0]{6}$')
@@ -139,8 +139,10 @@ def is_available(accession):
     return (not 'entry is not found' in record.text) and (len(record.getchildren()) > 0)
 
 def is_sequence(accession):
-    return sequence_pattern_1.match(accession) or sequence_pattern_2.match(accession) \
-        or sequence_pattern_3.match(accession)
+    return sequence_pattern_1.match(accession) or sequence_pattern_2.match(accession)
+
+def is_wgs_sequence(accession):
+    return wgs_sequence_pattern.match(accession)
 
 def is_coding(accession):
     return coding_pattern.match(accession)
@@ -262,23 +264,31 @@ def get_destination_file(dest_dir, accession, output_format):
 def download_single_record(url, dest_file, handler=None):
     urllib.urlretrieve(url, dest_file)
 
+<<<<<<< HEAD
 def download_record(dest_dir, accession, output_format, handler=None):
+=======
+def download_record(dest_dir, accession, output_format, expanded=False):
+>>>>>>> upstream_master
     try:
         dest_file = get_destination_file(dest_dir, accession, output_format)
         url = get_record_url(accession, output_format)
+        if (expanded):
+            url = url + '&expanded=true'
         download_single_record(url, dest_file)
         return True
     except Exception:
         return False
 
-def append_record(url, dest_file):
+def write_record(url, dest_file):
     try:
         response = urllib2.urlopen(url)
-        f = open(dest_file, 'a')
+        linenum = 1
         for line in response:
-            f.write(line)
-        f.flush()
-        f.close()
+            if linenum == 1 and line.startswith('Entry:'):
+                return False
+            dest_file.write(line)
+            linenum += 1
+        dest_file.flush()
         return True
     except Exception:
         return False
@@ -358,13 +368,22 @@ def set_aspera_variables(filepath):
     try:
         parser = SafeConfigParser()
         parser.read(filepath)
+        # set and check binary location
         global ASPERA_BIN
         ASPERA_BIN = parser.get('aspera', 'ASPERA_BIN')
+        if not os.path.exists(ASPERA_BIN):
+            print 'Aspera binary ({0}) does not exist. Defaulting to FTP transfer'.format(ASPERA_BIN)
+            return False
+        if not os.access(ASPERA_BIN, os.X_OK):
+            print 'You do not have permissions to execute the aspera binary ({0}). Defaulting to FTP transfer'.format(ASPERA_BIN)
+            return False
+        # set and check private key location
         global ASPERA_PRIVATE_KEY
         ASPERA_PRIVATE_KEY = parser.get('aspera', 'ASPERA_PRIVATE_KEY')
         if not os.path.exists(ASPERA_PRIVATE_KEY):
             print 'Private key file ({0}) does not exist. Defaulting to FTP transfer'.format(ASPERA_PRIVATE_KEY)
             return False
+        # set non-file variables
         global ASPERA_SPEED
         ASPERA_SPEED = parser.get('aspera', 'ASPERA_SPEED')
         global ASPERA_OPTIONS
@@ -395,8 +414,6 @@ def set_aspera(aspera_filepath):
 
 def asperaretrieve(url, dest_dir, dest_file, handler=None):
     try:
-        if not os.path.exists(ASPERA_BIN) or not os.path.exists(ASPERA_PRIVATE_KEY):
-            raise FileNotFoundError('Aspera not available. Check your ascp binary path and your private key file is specified correctly')
         logdir=os.path.abspath(os.path.join(dest_dir, "logs"))
         create_dir(logdir)
         aspera_line="{bin} -QT -L {logs} -l {speed} -P33001 {aspera} -i {key} era-fasp@{file} {outdir}"
@@ -697,3 +714,26 @@ def chunk_read(response, file_handle, chunk_size=104857, tick_rate=10, report_ho
                 tick += 1
 
     return bytes_so_far
+
+def get_divisor(record_cnt):
+    if record_cnt <= 10000:
+        return 1000
+    elif record_cnt <= 50000:
+        return 5000
+    return 10000
+
+def record_start_line(line, output_format):
+    if output_format == FASTA_FORMAT:
+        return line.startswith(b'>')
+    elif output_format == EMBL_FORMAT:
+        return line.startswith(b'ID  ')
+    else:
+        return False
+
+def extract_acc_from_line(line, output_format):
+    if output_format == FASTA_FORMAT:
+        return line.split(b'|')[1]
+    elif output_format == EMBL_FORMAT:
+        return line.split()[1][:-1]
+    else:
+        return ''
