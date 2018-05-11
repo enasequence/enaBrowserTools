@@ -409,7 +409,6 @@ def asperaretrieve(url, dest_dir, dest_file, handler=None):
             key=ASPERA_PRIVATE_KEY,
             speed=ASPERA_SPEED,
         )
-#        _do_aspera_transfer(aspera_line, handler)
         _do_aspera_pexpect(aspera_line, handler)
         return True
     except Exception as e:
@@ -457,7 +456,7 @@ def _do_aspera_pexpect(cmd, handler):
                         if handler and callable(handler):
                             handler(json.dumps(output))
                         else:
-                            sys.stdout.write("%s%% transferred, %s, %s\n" % (output["pct_completed"], output["bytes_transferred"], output["transfer_rate"])),
+                            sys.stdout.write("%s%% transferred, %s, %s\n" % (output["pct_completed"], output["bytes_transferred"], output["transfer_rate"]))
     thread.close()
 
 def _do_aspera_transfer(cmd, handler):

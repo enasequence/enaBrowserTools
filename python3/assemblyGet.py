@@ -94,7 +94,7 @@ def download_sequences(sequence_report, assembly_dir, output_format, quiet):
     download_sequence_set(unplaced_list, UNPLACED, assembly_dir, output_format, quiet)
     download_sequence_set(patch_list, PATCH, assembly_dir, output_format, quiet)
 
-def download_assembly(dest_dir, accession, output_format, fetch_wgs, quiet=False):
+def download_assembly(dest_dir, accession, output_format, fetch_wgs, quiet=False, handler=None):
     if output_format is None:
         output_format = utils.EMBL_FORMAT
     assembly_dir = os.path.join(dest_dir, accession)
@@ -107,12 +107,12 @@ def download_assembly(dest_dir, accession, output_format, fetch_wgs, quiet=False
     has_sequence_report = False
     # download sequence report
     if sequence_report is not None:
-        has_sequence_report = utils.get_ftp_file(sequence_report, assembly_dir)
+        has_sequence_report = utils.get_ftp_file(sequence_report, assembly_dir, handler)
     # download wgs set if needed
     if wgs_set is not None and fetch_wgs:
         if not quiet:
             print ('fetching wgs set')
-        sequenceGet.download_wgs(assembly_dir, wgs_set, output_format)
+        sequenceGet.download_wgs(assembly_dir, wgs_set, output_format, handler)
     # parse sequence report and download sequences
     if has_sequence_report:
         download_sequences(sequence_report.split('/')[-1], assembly_dir, output_format, quiet)

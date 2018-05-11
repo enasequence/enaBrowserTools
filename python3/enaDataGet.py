@@ -78,14 +78,14 @@ if __name__ == '__main__':
         if utils.is_wgs_set(accession):
             if output_format is not None:
                 sequenceGet.check_format(output_format)
-            sequenceGet.download_wgs(dest_dir, accession, output_format)
+            sequenceGet.download_wgs(dest_dir, accession, output_format, handler)
         elif not utils.is_available(accession):
             sys.stderr.write('ERROR: Record does not exist or is not available for accession provided\n')
             sys.exit(1)
         elif utils.is_sequence(accession):
             if output_format is not None:
                 sequenceGet.check_format(output_format)
-            sequenceGet.download_sequence(dest_dir, accession, output_format)
+            sequenceGet.download_sequence(dest_dir, accession, output_format, handler)
         elif utils.is_analysis(accession):
             if output_format is not None:
                 readGet.check_read_format(output_format)
@@ -97,7 +97,7 @@ if __name__ == '__main__':
         elif utils.is_assembly(accession):
             if output_format is not None:
                 assemblyGet.check_format(output_format)
-            assemblyGet.download_assembly(dest_dir, accession, output_format, fetch_wgs)
+            assemblyGet.download_assembly(dest_dir, accession, output_format, fetch_wgs, handler)
         else:
             sys.stderr.write('ERROR: Invalid accession provided\n')
             sys.exit(1)
