@@ -58,6 +58,9 @@ def set_parser():
                         for environment variable or default settings file location.""")
     parser.add_argument('-t', '--subtree', action='store_true',
                         help='Include subordinate taxa (taxon subtree) when querying with NCBI tax ID (default is false)')
+    parser.add_argument('-r', '--redirect-handler', default=None,
+                        choices=['queue', 'file'],
+                        help="""File download progress handler. Specify an output handler to process the download progress. Default is no handler (output is printed to stdout). 'queue' redirects all output to a queue handler, such as RabbitMQ. 'file' redirects to a file handle (default is [current_file_download.log]).""")
     parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.5')
     return parser
 
@@ -70,18 +73,18 @@ def download_report(group, result, accession, temp_file, subtree):
     f.flush()
     f.close()
 
-def download_data(group, data_accession, output_format, group_dir, fetch_wgs, extract_wgs, expanded, fetch_meta, fetch_index, aspera):
+def download_data(group, data_accession, output_format, group_dir, fetch_wgs, extract_wgs, expanded, fetch_meta, fetch_index, aspera, handler=None):
     if group == utils.WGS:
         print 'Fetching ' + data_accession[:6]
-        sequenceGet.download_wgs(group_dir, data_accession[:6], output_format)
+        sequenceGet.download_wgs(group_dir, data_accession[:6], output_format, handler)
     else:
         print 'Fetching ' + data_accession
         if group == utils.ASSEMBLY:
-            assemblyGet.download_assembly(group_dir, data_accession, output_format, fetch_wgs, extract_wgs, expanded, True)
+            assemblyGet.download_assembly(group_dir, data_accession, output_format, fetch_wgs, extract_wgs, expanded, True, handler)
         elif group in [utils.READ, utils.ANALYSIS]:
-            readGet.download_files(data_accession, output_format, group_dir, fetch_index, fetch_meta, aspera)
+            readGet.download_files(data_accession, output_format, group_dir, fetch_index, fetch_meta, aspera, handler)
 
-def download_data_group(group, accession, output_format, group_dir, fetch_wgs, extract_wgs, fetch_meta, fetch_index, aspera, subtree, expanded):
+def download_data_group(group, accession, output_format, group_dir, fetch_wgs, extract_wgs, fetch_meta, fetch_index, aspera, subtree, expanded, handler=None):
     temp_file_path = os.path.join(group_dir, accession + '_temp.txt')
     download_report(group, utils.get_group_result(group), accession, temp_file_path, subtree)
     header = True
@@ -91,7 +94,7 @@ def download_data_group(group, accession, output_format, group_dir, fetch_wgs, e
                 header = False
                 continue
             data_accession = line.strip()
-            download_data(group, data_accession, output_format, group_dir, fetch_wgs, extract_wgs, expanded, fetch_meta, fetch_index, aspera)
+            download_data(group, data_accession, output_format, group_dir, fetch_wgs, extract_wgs, expanded, fetch_meta, fetch_index, aspera, handler)
     os.remove(temp_file_path)
 
 def download_sequence_result(dest_file, group_dir, result, accession, subtree, update_accs, expanded):
@@ -128,13 +131,13 @@ def download_sequence_group(accession, output_format, group_dir, subtree, expand
     update_accs = download_sequence_result(dest_file, group_dir, utils.SEQUENCE_RELEASE_RESULT, accession, subtree, update_accs, expanded)
     dest_file.close()
 
-def download_group(accession, group, output_format, dest_dir, fetch_wgs, extract_wgs, fetch_meta, fetch_index, aspera, subtree, expanded):
+def download_group(accession, group, output_format, dest_dir, fetch_wgs, extract_wgs, fetch_meta, fetch_index, aspera, subtree, expanded, handler=None):
     group_dir = os.path.join(dest_dir, accession)
     utils.create_dir(group_dir)
     if group == utils.SEQUENCE:
         download_sequence_group(accession, output_format, group_dir, subtree, expanded)
     else:
-        download_data_group(group, accession, output_format, group_dir, fetch_wgs, extract_wgs, fetch_meta, fetch_index, aspera, subtree, expanded)
+        download_data_group(group, accession, output_format, group_dir, fetch_wgs, extract_wgs, fetch_meta, fetch_index, aspera, subtree, expanded, handler)
 
 
 if __name__ == '__main__':
@@ -153,6 +156,7 @@ if __name__ == '__main__':
     aspera = args.aspera
     aspera_settings = args.aspera_settings
     subtree = args.subtree
+    handler = args.redirect_handler
 
     if aspera or aspera_settings is not None:
         aspera = utils.set_aspera(aspera_settings)
@@ -185,7 +189,7 @@ if __name__ == '__main__':
         if utils.is_taxid(accession) and group in ['read', 'analysis']:
             print 'Sorry, tax ID retrieval not yet supported for read and analysis'
             sys.exit(1)
-        download_group(accession, group, output_format, dest_dir, fetch_wgs, extract_wgs, fetch_meta, fetch_index, aspera, subtree, expanded)
+        download_group(accession, group, output_format, dest_dir, fetch_wgs, extract_wgs, fetch_meta, fetch_index, aspera, subtree, expanded, handler)
         print 'Completed'
     except Exception:
         utils.print_error()
