@@ -261,14 +261,10 @@ def get_destination_file(dest_dir, accession, output_format):
         return os.path.join(dest_dir, filename)
     return None
 
-def download_single_record(url, dest_file, handler=None):
+def download_single_record(url, dest_file):
     urllib.urlretrieve(url, dest_file)
 
-<<<<<<< HEAD
-def download_record(dest_dir, accession, output_format, handler=None):
-=======
 def download_record(dest_dir, accession, output_format, expanded=False):
->>>>>>> upstream_master
     try:
         dest_file = get_destination_file(dest_dir, accession, output_format)
         url = get_record_url(accession, output_format)
@@ -426,13 +422,13 @@ def asperaretrieve(url, dest_dir, dest_file, handler=None):
             key=ASPERA_PRIVATE_KEY,
             speed=ASPERA_SPEED,
         )
-        _do_aspera_pexpect(aspera_line, handler)
+        _do_aspera_pexpect(url, aspera_line, handler)
         return True
     except Exception as e:
         sys.stderr.write("Error with Aspera transfer: {0}\n".format(e))
         return False
 
-def _do_aspera_pexpect(cmd, handler):
+def _do_aspera_pexpect(url, cmd, handler):
     thread = pexpect.spawn(cmd, timeout=None)
     cpl = thread.compile_pattern_list([pexpect.EOF, '(.+)'])
     started = 0
@@ -470,10 +466,12 @@ def _do_aspera_pexpect(cmd, handler):
                         if transfer_rate:
                             output["transfer_rate"] = transfer_rate[0]
 
+                        output["url"] = url
+
                         if handler and callable(handler):
                             handler(json.dumps(output))
                         else:
-                            sys.stdout.write("%s%% transferred, %s, %s\n" % (output["pct_completed"], output["bytes_transferred"], output["transfer_rate"]))
+                            sys.stdout.write("%s : %s%% transferred, %s, %s\n" % (output["url"], output["pct_completed"], output["bytes_transferred"], output["transfer_rate"]))
     thread.close()
 
 def _do_aspera_transfer(cmd, handler):
