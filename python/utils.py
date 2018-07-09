@@ -35,9 +35,6 @@ ASPERA_PRIVATE_KEY = '/path/to/aspera_dsa.openssh' # ascp private key file
 ASPERA_OPTIONS = '' # set any extra aspera options
 ASPERA_SPEED = '100M' # set aspera download speed
 
-ANON_USER = 'anon'
-ANON_PWD = 'anon'
-
 SUPPRESSED = 'suppressed'
 PUBLIC = 'public'
 
@@ -449,7 +446,6 @@ def get_nonversioned_wgs_ftp_url(wgs_set, status, output_format):
 
 def get_report_from_portal(url):
     request = urllib2.Request(url)
-    request.add_header('Authorization', b'Basic ' + base64.b64encode(ANON_USER + b':' + ANON_PWD))
     return urllib2.urlopen(request)
 
 def download_report_from_portal(url, dest_file):
