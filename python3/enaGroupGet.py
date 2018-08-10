@@ -25,6 +25,7 @@ import sequenceGet
 import assemblyGet
 import readGet
 import utils
+import traceback
 
 def set_parser():
     parser = argparse.ArgumentParser(prog='enaGroupGet',
@@ -58,7 +59,7 @@ def set_parser():
                         for environment variable or default settings file location.""")
     parser.add_argument('-t', '--subtree', action='store_true',
                         help='Include subordinate taxa (taxon subtree) when querying with NCBI tax ID (default is false)')
-    parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.5.2')
+    parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.5.3')
     return parser
 
 def download_report(group, result, accession, temp_file, subtree):
@@ -187,5 +188,6 @@ if __name__ == '__main__':
         download_group(accession, group, output_format, dest_dir, fetch_wgs, extract_wgs, fetch_meta, fetch_index, aspera, subtree, expanded)
         print ('Completed')
     except Exception:
+        traceback.print_exc()
         utils.print_error()
         sys.exit(1)
