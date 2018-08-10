@@ -25,6 +25,7 @@ import sequenceGet
 import assemblyGet
 import readGet
 import utils
+import traceback
 
 def set_parser():
     parser = argparse.ArgumentParser(prog='enaDataGet',
@@ -54,7 +55,7 @@ def set_parser():
     parser.add_argument('-as', '--aspera-settings', default=None,
                     help="""Use the provided settings file, will otherwise check
                         for environment variable or default settings file location.""")
-    parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.5.2')
+    parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.5.3')
     return parser
 
 
@@ -105,5 +106,6 @@ if __name__ == '__main__':
             sys.exit(1)
         print 'Completed'
     except Exception:
+        traceback.print_exc()
         utils.print_error()
         sys.exit(1)
