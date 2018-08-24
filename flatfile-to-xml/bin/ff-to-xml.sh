@@ -11,15 +11,11 @@ then
     exit $?
 fi
 
-if [ $# -eq 0 ]
+if [ $# -lt 2 ]
 then
-    echo Usage: "<flatfile path> <xml output path> <flatfile format: EMBL/CDS/NCR/MASTER>"
-    echo Last argument is optional. Default format is EMBL.
-    echo e.g.
-    echo ./ff-to-xml.sh c:\user\ABC.txt c:\user\ABC.xml CDS
-    exit 1
+    echo "Usage: <flatfile path> <xml output path> <flatfile format: EMBL/CDS/NCR/MASTER>"
+    echo "Last argument is optional. Default format is EMBL."
+    echo "e.g."
+    echo "./ff-to-xml.sh c:\user\ABC.txt c:\user\ABC.xml CDS"
 fi
-
-
-
 

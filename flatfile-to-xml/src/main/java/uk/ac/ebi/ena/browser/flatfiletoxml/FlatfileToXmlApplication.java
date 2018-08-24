@@ -37,17 +37,8 @@ public class FlatfileToXmlApplication implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
         log.info("Converting file {}", flatfile);
-        String valid = validateArguments();
-        if (StringUtils.isNotBlank(valid)) {
-            log.info("Unable to process: {}", valid);
-            System.out.println("Unable to process:" + valid);
-            System.out.println("Usage: <flatfile path> <xml output path> <flatfile format: EMBL/CDS/NCR/MASTER>");
-            System.out.println("Last argument is optional. Default format is EMBL.");
-            System.out.println("e.g.");
-            System.out.println("./ff-to-xml.sh /home/user/ABC.txt /home/user/ABC.xml CDS");
-            System.out.println("ff-to-xml.bat c:\\user\\ABC.txt c:\\user\\ABC.xml");
-            System.exit(1);
-        }
+        validateArguments();
+
         File file = new File(flatfile);
         File outputFile = new File(xmlfile);
         EmblEntryReader.Format format = EmblEntryReader.Format.EMBL_FORMAT;
@@ -63,19 +54,30 @@ public class FlatfileToXmlApplication implements CommandLineRunner {
             Entry entry = reader.getEntry();
             writer.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>" + System.lineSeparator());
             new XmlEntryWriter(entry).write(writer);
+            System.out.println("Conversion complete.");
         }
     }
 
-    private String validateArguments() {
+    private void validateArguments() {
+        String valid = null;
         if (StringUtils.isBlank(flatfile) || !new File(flatfile).exists()) {
-            return "Please specify full path of flatfile.";
+            valid = "Please specify full path of flatfile.";
         }
-        if (StringUtils.isBlank(xmlfile) || !new File(xmlfile).getParentFile().exists()) {
-            return ("Please specify full path of xml output file.");
+        File xmlfile = new File(this.xmlfile);
+        if (StringUtils.isBlank(this.xmlfile) || !xmlfile.getParentFile().exists() || !xmlfile.canWrite()) {
+            valid = ("Please specify full path of xml output file.");
         }
         if (StringUtils.isBlank(inputFormat)) {
-            log.info("Flatfile format not specified. Defaulting to EMBL format.");
+            System.out.println("Flatfile format not specified. Defaulting to EMBL format.");
         }
-        return null;
+        if (StringUtils.isNotBlank(valid)) {
+            System.out.println("Unable to process:" + valid);
+            System.out.println("Usage: <flatfile path> <xml output path> <flatfile format: EMBL/CDS/NCR/MASTER>");
+            System.out.println("Last argument is optional. Default format is EMBL.");
+            System.out.println("e.g.");
+            System.out.println("./ff-to-xml.sh /home/user/ABC.txt /home/user/ABC.xml CDS");
+            System.out.println("ff-to-xml.bat c:\\user\\ABC.txt c:\\user\\ABC.xml");
+            System.exit(1);
+        }
     }
 }
