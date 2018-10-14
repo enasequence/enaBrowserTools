@@ -42,8 +42,6 @@ ASPERA_PRIVATE_KEY = '/path/to/aspera_dsa.openssh' # ascp private key file
 ASPERA_OPTIONS = '' # set any extra aspera options
 ASPERA_SPEED = '100M' # set aspera download speed
 
-ANON_AUTH = b'anon:anon'
-
 SUPPRESSED = 'suppressed'
 PUBLIC = 'public'
 
@@ -527,9 +525,7 @@ def get_nonversioned_wgs_ftp_url(wgs_set, status, output_format):
         return base_url + '/' + max(files)
 
 def get_report_from_portal(url):
-    userAndPass = base64.b64encode(ANON_AUTH).decode("ascii")
-    headers = { 'Authorization' : 'Basic %s' %  userAndPass }
-    request = urlrequest.Request(url, headers=headers)
+    request = urlrequest.Request(url)
     gcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
     return urlrequest.urlopen(request, context=gcontext)
 
@@ -674,7 +670,7 @@ def is_empty_dir(target_dir):
 
 def print_error():
     sys.stderr.write('ERROR: Something unexpected went wrong please try again.\n')
-    sys.stderr.write('If problem persists, please contact datasubs@ebi.ac.uk for assistance.\n')
+    sys.stderr.write('If problem persists, please contact datasubs@ebi.ac.uk for assistance, with the above error details.\n')
 
 def chunk_report(f, bytes_so_far, chunk_size, total_size, handler=None):
     global start_time

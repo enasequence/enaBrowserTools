@@ -25,6 +25,7 @@ import sequenceGet
 import assemblyGet
 import readGet
 import utils
+import traceback
 
 def set_parser():
     parser = argparse.ArgumentParser(prog='enaGroupGet',
@@ -61,7 +62,7 @@ def set_parser():
     parser.add_argument('-r', '--redirect-handler', default=None,
                         choices=['queue', 'file'],
                         help="""File download progress handler. Specify an output handler to process the download progress. Default is no handler (output is printed to stdout). 'queue' redirects all output to a queue handler, such as RabbitMQ. 'file' redirects to a file handle (default is [current_file_download.log]).""")
-    parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.5')
+    parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.5.3')
     return parser
 
 def download_report(group, result, accession, temp_file, subtree):
@@ -192,5 +193,6 @@ if __name__ == '__main__':
         download_group(accession, group, output_format, dest_dir, fetch_wgs, extract_wgs, fetch_meta, fetch_index, aspera, subtree, expanded, handler)
         print 'Completed'
     except Exception:
+        traceback.print_exc()
         utils.print_error()
         sys.exit(1)
