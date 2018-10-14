@@ -2,6 +2,8 @@
 
 enaBrowserTools is a set of scripts that interface with the ENA web services to download data from ENA easily, without any knowledge of scripting required.
 
+*Important: Please note that v1.5.4 is the last update that will support python 2.7. Due to the 2019 scheduled retirement of python 2.7, the next release (2.0) will be restructured to hold only python 3 scripts.*
+
 # License
 
 Copyright 2017 EMBL - European Bioinformatics Institute Licensed under the Apache License, Version 2.0 (the "License");
