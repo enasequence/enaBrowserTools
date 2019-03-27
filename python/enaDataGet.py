@@ -63,7 +63,7 @@ if __name__ == '__main__':
     parser = set_parser()
     args = parser.parse_args()
 
-    accession = args.accession
+    accession = args.accession.strip()
     output_format = args.format
     dest_dir = args.dest
     fetch_wgs = args.wgs
