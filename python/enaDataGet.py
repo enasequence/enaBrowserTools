@@ -55,6 +55,9 @@ def set_parser():
     parser.add_argument('-as', '--aspera-settings', default=None,
                     help="""Use the provided settings file, will otherwise check
                         for environment variable or default settings file location.""")
+    parser.add_argument('-r', '--redirect-handler', default=None,
+                        choices=['queue', 'file'],
+                        help="""File download progress handler. Specify an output handler to process the download progress. Default is no handler (output is printed to stdout). 'queue' redirects all output to a queue handler, such as RabbitMQ. 'file' redirects to a file handle (default is [current_file_download.log]).""")
     parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.5.3')
     return parser
 
@@ -73,34 +76,40 @@ if __name__ == '__main__':
     fetch_index = args.index
     aspera = args.aspera
     aspera_settings = args.aspera_settings
+    handler = args.redirect_handler
 
     if aspera or aspera_settings is not None:
         aspera = utils.set_aspera(aspera_settings)
 
     try:
         if utils.is_wgs_set(accession):
+            print("Downloading WGS set")
             if output_format is not None:
                 sequenceGet.check_format(output_format)
-            sequenceGet.download_wgs(dest_dir, accession, output_format)
+            sequenceGet.download_wgs(dest_dir, accession, output_format, handler)
         elif not utils.is_available(accession):
             sys.stderr.write('ERROR: Record does not exist or is not available for accession provided\n')
             sys.exit(1)
         elif utils.is_sequence(accession):
+            print("Downloading sequence(s)")
             if output_format is not None:
                 sequenceGet.check_format(output_format)
-            sequenceGet.download_sequence(dest_dir, accession, output_format, expanded)
+            sequenceGet.download_sequence(dest_dir, accession, output_format, expanded, handler)
         elif utils.is_analysis(accession):
+            print("Downloading analysis")
             if output_format is not None:
                 readGet.check_read_format(output_format)
-            readGet.download_files(accession, output_format, dest_dir, fetch_index, fetch_meta, aspera)
+            readGet.download_files(accession, output_format, dest_dir, fetch_index, fetch_meta, aspera, handler)
         elif utils.is_run(accession) or utils.is_experiment(accession):
+            print("Downloading reads")
             if output_format is not None:
                 readGet.check_read_format(output_format)
-            readGet.download_files(accession, output_format, dest_dir, fetch_index, fetch_meta, aspera)
+            readGet.download_files(accession, output_format, dest_dir, fetch_index, fetch_meta, aspera, handler)
         elif utils.is_assembly(accession):
+            print("Downloading assembly")
             if output_format is not None:
                 assemblyGet.check_format(output_format)
-            assemblyGet.download_assembly(dest_dir, accession, output_format, fetch_wgs, extract_wgs, expanded)
+            assemblyGet.download_assembly(dest_dir, accession, output_format, fetch_wgs, extract_wgs, expanded, handler)
         else:
             sys.stderr.write('ERROR: Invalid accession provided\n')
             sys.exit(1)

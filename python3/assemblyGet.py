@@ -136,7 +136,7 @@ def extract_wgs_scaffolds(assembly_dir, wgs_scaffolds, wgs_set, output_format, q
     target_file.flush()
     target_file.close()
 
-def download_assembly(dest_dir, accession, output_format, fetch_wgs, extract_wgs, expanded, quiet=False):
+def download_assembly(dest_dir, accession, output_format, fetch_wgs, extract_wgs, expanded, quiet=False, handler=None):
     if output_format is None:
         output_format = utils.EMBL_FORMAT
     assembly_dir = os.path.join(dest_dir, accession)
@@ -149,7 +149,7 @@ def download_assembly(dest_dir, accession, output_format, fetch_wgs, extract_wgs
     has_sequence_report = False
     # download sequence report
     if sequence_report is not None:
-        has_sequence_report = utils.get_ftp_file(sequence_report, assembly_dir)
+        has_sequence_report = utils.get_ftp_file(sequence_report, assembly_dir, handler)
     # parse sequence report and download sequences
     wgs_scaffolds = []
     wgs_scaffold_cnt = 0
@@ -166,7 +166,7 @@ def download_assembly(dest_dir, accession, output_format, fetch_wgs, extract_wgs
     if wgs_set is not None and fetch_wgs:
         if not quiet:
             print ('fetching wgs set')
-        sequenceGet.download_wgs(assembly_dir, wgs_set, output_format)
+        sequenceGet.download_wgs(assembly_dir, wgs_set, output_format, handler)
         # extract wgs scaffolds from WGS file
         if wgs_scaffold_cnt > 0 and extract_wgs:
             extract_wgs_scaffolds(assembly_dir, wgs_scaffolds, wgs_set, output_format, quiet)
