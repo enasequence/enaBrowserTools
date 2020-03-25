@@ -20,6 +20,7 @@
 import os
 import sys
 import argparse
+import tempfile
 
 import utils
 
@@ -85,12 +86,9 @@ def download_files(accession, output_format, dest_dir, fetch_index, fetch_meta, 
         download_experiment_meta(accession, accession_dir)
     # download data files
     search_url = utils.get_file_search_query(accession, aspera)
-    temp_file = os.path.join(dest_dir, 'temp.txt')
-    utils.download_report_from_portal(search_url, temp_file)
-    f = open(temp_file)
-    lines = f.readlines()
-    f.close()
-    os.remove(temp_file)
+
+    lines = utils.download_report_from_portal(search_url)
+
     for line in lines[1:]:
         data_accession, filelist, md5list, indexlist = utils.parse_file_search_result_line(
             line, accession, output_format)

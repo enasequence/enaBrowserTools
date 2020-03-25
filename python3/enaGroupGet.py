@@ -26,6 +26,7 @@ import assemblyGet
 import readGet
 import utils
 import traceback
+import time
 
 def set_parser():
     parser = argparse.ArgumentParser(prog='enaGroupGet',
@@ -96,7 +97,8 @@ def download_data_group(group, accession, output_format, group_dir, fetch_wgs, e
     os.remove(temp_file_path)
 
 def download_sequence_result(dest_file, group_dir, result, accession, subtree, update_accs, expanded):
-    temp_file_path = os.path.join(group_dir, 'temp.txt')
+    ts = time.time()
+    temp_file_path = os.path.join(group_dir, str(ts) + 'temp.txt')
     download_report(utils.SEQUENCE, result, accession, temp_file_path, subtree)
     header = True
     with open(temp_file_path) as f:
@@ -157,7 +159,7 @@ if __name__ == '__main__':
     if aspera or aspera_settings is not None:
         aspera = utils.set_aspera(aspera_settings)
 
-    if not utils.is_available(accession):
+    if not utils.is_available(accession, output_format):
         sys.stderr.write('ERROR: Study/sample does not exist or is not available for accession provided.\n')
         sys.stderr.write('If you believe that it should be, please contact datasubs@ebi.ac.uk for assistance.\n')
         sys.exit(1)

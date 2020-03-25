@@ -26,6 +26,7 @@ import ssl
 import subprocess
 import sys
 import urllib.request as urlrequest
+import requests
 import xml.etree.ElementTree as ElementTree
 import urllib.error as urlerror
 
@@ -67,10 +68,10 @@ READ = 'read'
 SAMPLE = 'sample'
 TAXON = 'taxon'
 
-VIEW_URL_BASE = 'https://www.ebi.ac.uk/ena/data/view/'
-XML_DISPLAY = '&display=xml'
-EMBL_DISPLAY = '&display=text'
-FASTA_DISPLAY = '&display=fasta'
+VIEW_URL_BASE = 'https://www.ebi.ac.uk/ena/browser/api/'
+XML_DISPLAY = 'xml/'
+EMBL_DISPLAY = 'embl/'
+FASTA_DISPLAY = 'fasta/'
 
 READ_RESULT_ID='read_run'
 ANALYSIS_RESULT_ID='analysis'
@@ -224,22 +225,24 @@ def group_format_allowed(group, output_format, aspera):
 # assumption is that accession and format have already been vetted before this method is called
 def get_record_url(accession, output_format):
     if output_format == XML_FORMAT:
-        return VIEW_URL_BASE + accession + XML_DISPLAY
+        return VIEW_URL_BASE + XML_DISPLAY + accession
     elif output_format == EMBL_FORMAT:
-        return VIEW_URL_BASE + accession + EMBL_DISPLAY
+        return VIEW_URL_BASE + EMBL_DISPLAY + accession
     elif output_format == FASTA_FORMAT:
-        return VIEW_URL_BASE + accession + FASTA_DISPLAY
+        return VIEW_URL_BASE + FASTA_DISPLAY + accession
     return None
 
-def is_available(accession):
+def is_available(accession, output_format):
     if is_taxid(accession):
         url = get_record_url('Taxon:{0}'.format(accession), XML_FORMAT)
     else:
-        url = get_record_url(accession, XML_FORMAT)
+        url = get_record_url(accession, output_format)
+        if url == None:
+            url = get_record_url(accession, XML_FORMAT)
     try:
-        response = urlrequest.urlopen(url)
-        record = ElementTree.parse(response).getroot()
-        return (not 'entry is not found' in record.text) and (len(record.getchildren()) > 0)
+        print('Checking availability of ' + url)
+        response = requests.get(url)
+        return response.status_code == 200
     except urlerror.URLError as e:
         if 'CERTIFICATE_VERIFY_FAILED' in str(e):
             print ('Error verifying SSL certificate. Have you run "Install Certificates" as part of your Python3 installation?')
@@ -463,13 +466,12 @@ def get_report_from_portal(url):
     gcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
     return urlrequest.urlopen(request, context=gcontext)
 
-def download_report_from_portal(url, dest_file):
+def download_report_from_portal(url):
     response = get_report_from_portal(url)
-    f = open(dest_file, 'wb')
+    lines = []
     for line in response:
-        chars = f.write(line)
-    f.flush()
-    f.close()
+        lines.append(line.decode('utf-8'))
+    return lines
 
 def get_accession_query(accession):
     query = 'query='

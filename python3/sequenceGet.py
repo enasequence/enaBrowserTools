@@ -25,6 +25,7 @@ import utils
 
 def write_record(dest_file, accession, output_format, expanded=False):
     url = utils.get_record_url(accession, output_format)
+    print('Fetching ' + url)
     if expanded:
         url = url + '&expanded=true'
     return utils.write_record(url, dest_file)

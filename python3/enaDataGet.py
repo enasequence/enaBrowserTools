@@ -82,7 +82,7 @@ if __name__ == '__main__':
             if output_format is not None:
                 sequenceGet.check_format(output_format)
             sequenceGet.download_wgs(dest_dir, accession, output_format)
-        elif not utils.is_available(accession):
+        elif not utils.is_available(accession, output_format):
             sys.stderr.write('ERROR: Record does not exist or is not available for accession provided\n')
             sys.exit(1)
         elif utils.is_sequence(accession):
