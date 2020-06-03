@@ -21,6 +21,7 @@ import os
 import sys
 import argparse
 import tempfile
+import urllib
 
 import utils
 
@@ -109,7 +110,7 @@ def download_files(accession, output_format, dest_dir, fetch_index, fetch_meta, 
                 print ('No files of format {0} for {1}'.format(output_format, data_accession))
             continue
         for i in range(len(filelist)):
-            file_url = filelist[i]
+            file_url = urllib.parse.quote(filelist[i])
             md5 = md5list[i]
             if file_url != '':
                 download_file(file_url, target_dir, md5, aspera)

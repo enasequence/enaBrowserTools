@@ -250,6 +250,6 @@ A word of advice for read formats:
 
 # Problems
 
-For any problems, please contact datasubs@ebi.ac.uk with 'enaBrowserTools' in your subject line.
+For any problems, please contact the ENA helpdesk (https://www.ebi.ac.uk/ena/browser/support) with 'enaBrowserTools' in your subject line.
 
 We have had a couple of reports that the R2 FASTQ files are not always successfully downloading for paired runs. We have been unable to replicate this problem and have therefore exposed the error message to you should there be any download failure of read/analysis files via FTP or Aspera. If you get one of these errors, please copy the error into your email to datasubs.
