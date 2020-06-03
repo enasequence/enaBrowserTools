@@ -21,6 +21,7 @@ import os
 import sys
 import argparse
 import tempfile
+import urllib.parse as urlparse
 
 import utils
 
@@ -52,6 +53,7 @@ def attempt_file_download(file_url, dest_dir, md5, aspera):
     return utils.get_ftp_file('ftp://' + file_url, dest_dir)
 
 def download_file(file_url, dest_dir, md5, aspera):
+    file_url = urlparse.quote(file_url)
     if utils.file_exists(file_url, dest_dir, md5):
         return
     success = attempt_file_download(file_url, dest_dir, md5, aspera)
