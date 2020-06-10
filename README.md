@@ -4,7 +4,7 @@ enaBrowserTools is a set of scripts that interface with the ENA web services to 
 
 *Important: Python 2 based scripts in the python/ folder are deprecated. Use the scripts in python3/
 
-Please note that v1.5.4 is the last update that will support python 2.7. Due to the 2019 scheduled retirement of python 2.7, the next release (2.0) will be restructured to hold only python 3 scripts.*
+Please note that v1.5.5 is the last update that will support python 2.7. Due to the 2019 scheduled retirement of python 2.7, the next release (1.6.0) will be restructured to hold only python 3 scripts.*
 
 # License
 
