@@ -607,7 +607,7 @@ def is_empty_dir(target_dir):
 
 def print_error():
     sys.stderr.write('ERROR: Something unexpected went wrong please try again.\n')
-    sys.stderr.write('If problem persists, please contact datasubs@ebi.ac.uk for assistance, with the above error details.\n')
+    sys.stderr.write('If problem persists, please contact ENA (https://www.ebi.ac.uk/ena/browser/support) for assistance, with the above error details.\n')
 
 def get_divisor(record_cnt):
     if record_cnt <= 10000:
