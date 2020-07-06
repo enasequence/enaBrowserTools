@@ -5,5 +5,3 @@
 ### compiled python ###
 python/*.pyc
 python3/__pycache__
-
-python3/embl-ebi-broker_activity/reporting/__pycache__
