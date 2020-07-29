@@ -236,6 +236,8 @@ def get_record_url(accession, output_format):
 def is_available(accession, output_format):
     if is_taxid(accession):
         url = get_record_url('Taxon:{0}'.format(accession), XML_FORMAT)
+    elif is_study(accession) or is_sample(accession):
+        url = get_record_url(accession, XML_FORMAT)
     else:
         url = get_record_url(accession, output_format)
         if url == None:
