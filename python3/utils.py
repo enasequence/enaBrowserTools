@@ -236,7 +236,7 @@ def get_record_url(accession, output_format):
 def is_available(accession, output_format):
     if is_taxid(accession):
         url = get_record_url('Taxon:{0}'.format(accession), XML_FORMAT)
-    elif is_study(accession) or is_sample(accession):
+    elif is_study(accession) or is_sample(accession) or is_assembly(accession):
         url = get_record_url(accession, XML_FORMAT)
     else:
         url = get_record_url(accession, output_format)
@@ -245,7 +245,7 @@ def is_available(accession, output_format):
     try:
         print('Checking availability of ' + url)
         response = requests.get(url)
-        return response.status_code == 200
+        return response.status_code == 200 and len(response.content) != 0
     except urlerror.URLError as e:
         if 'CERTIFICATE_VERIFY_FAILED' in str(e):
             print ('Error verifying SSL certificate. Have you run "Install Certificates" as part of your Python3 installation?')

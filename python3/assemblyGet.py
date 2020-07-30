@@ -39,6 +39,9 @@ def check_format(output_format):
         )
         sys.exit(1)
 
+def get_default_format():
+    return utils.EMBL_FORMAT
+
 def get_sequence_report_url(record):
     for link in record.iter('URL_LINK'):
         label = (link.find('LABEL').text)
@@ -137,8 +140,6 @@ def extract_wgs_scaffolds(assembly_dir, wgs_scaffolds, wgs_set, output_format, q
     target_file.close()
 
 def download_assembly(dest_dir, accession, output_format, fetch_wgs, extract_wgs, expanded, quiet=False):
-    if output_format is None:
-        output_format = utils.EMBL_FORMAT
     assembly_dir = os.path.join(dest_dir, accession)
     utils.create_dir(assembly_dir)
     # download xml

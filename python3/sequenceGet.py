@@ -31,8 +31,6 @@ def write_record(dest_file, accession, output_format, expanded=False):
     return utils.write_record(url, dest_file)
 
 def download_sequence(dest_dir, accession, output_format, expanded):
-    if output_format is None:
-        output_format = utils.EMBL_FORMAT
     success = utils.download_record(dest_dir, accession, output_format, expanded)
     if not success:
         print ('Unable to fetch file for {0}, format {1}'.format(accession, output_format))
@@ -45,8 +43,6 @@ def download_wgs(dest_dir, accession, output_format):
 
 def download_versioned_wgs(dest_dir, accession, output_format):
     prefix = accession[:6]
-    if output_format is None:
-        output_format = utils.EMBL_FORMAT
     public_set_url = utils.get_wgs_ftp_url(prefix, utils.PUBLIC, output_format)
     supp_set_url = utils.get_wgs_ftp_url(prefix, utils.SUPPRESSED, output_format)
     success = utils.get_ftp_file(public_set_url, dest_dir)
@@ -58,8 +54,6 @@ def download_versioned_wgs(dest_dir, accession, output_format):
 
 def download_unversioned_wgs(dest_dir, accession, output_format):
     prefix = accession[:4]
-    if output_format is None:
-        output_format = utils.EMBL_FORMAT
     public_set_url = utils.get_nonversioned_wgs_ftp_url(prefix, utils.PUBLIC, output_format)
     if public_set_url is not None:
         utils.get_ftp_file(public_set_url, dest_dir)
@@ -76,3 +70,6 @@ def check_format(output_format):
     if output_format not in allowed_formats:
         sys.stderr.write('Please select a valid format for this accession: {0}\n'.format(allowed_formats))
         sys.exit(1)
+
+def get_default_format():
+    return utils.EMBL_FORMAT
