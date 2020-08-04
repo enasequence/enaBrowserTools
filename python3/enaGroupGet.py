@@ -161,7 +161,7 @@ if __name__ == '__main__':
 
     if not utils.is_available(accession, output_format):
         sys.stderr.write('ERROR: Study/sample does not exist or is not available for accession provided.\n')
-        sys.stderr.write('If you believe that it should be, please contact datasubs@ebi.ac.uk for assistance.\n')
+        sys.stderr.write('If you believe that it should be, please contact ENA (https://www.ebi.ac.uk/ena/browser/support) for assistance.\n')
         sys.exit(1)
 
     if not utils.is_study(accession) and not utils.is_sample(accession) and not utils.is_taxid(accession):

@@ -46,14 +46,15 @@ def attempt_file_download(file_url, dest_dir, md5, aspera):
         if aspera:
             return utils.get_aspera_file_with_md5_check(file_url, dest_dir, md5)
         else:
+            file_url = urlparse.quote(file_url)
             return utils.get_ftp_file_with_md5_check('ftp://' + file_url, dest_dir, md5)
     print('Downloading file:' + file_url)
     if aspera:
         return utils.get_aspera_file(file_url, dest_dir)
+    file_url = urlparse.quote(file_url)
     return utils.get_ftp_file('ftp://' + file_url, dest_dir)
 
 def download_file(file_url, dest_dir, md5, aspera):
-    file_url = urlparse.quote(file_url)
     if utils.file_exists(file_url, dest_dir, md5):
         return
     success = attempt_file_download(file_url, dest_dir, md5, aspera)

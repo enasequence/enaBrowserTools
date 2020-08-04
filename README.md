@@ -2,10 +2,6 @@
 
 enaBrowserTools is a set of scripts that interface with the ENA web services to download data from ENA easily, without any knowledge of scripting required.
 
-*Important: Python 2 based scripts in the python/ folder are deprecated. Use the scripts in python3/
-
-Please note that v1.5.5 is the last update that will support python 2.7. Due to the 2019 scheduled retirement of python 2.7, the next release (1.6.0) will be restructured to hold only python 3 scripts.*
-
 # License
 
 Copyright 2017 EMBL - European Bioinformatics Institute Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,9 +13,9 @@ Unless required by applicable law or agreed to in writing, software distributed 
 
 ## Python installation
 
-Both Python 2 and Python 3 scripts are available.  The Python 2 scripts can be found in the "python" folder, and the Python 3 scripts in the "python3" folder.   
+Python 3 scripts are available.  These can be found in the "python3" folder.   
 
-To run these scripts you will need to have Python installed.  You can download either Python 2 or Python 3 from [here](https://www.python.org/downloads/). If you already have Python installed, you can find out which version when you start the python interpreter.  If using Python 2, we suggest you upgrade to the latest version if you don't already have it: 2.7.
+To run these scripts you will need to have Python installed.  You can download Python 3 from [here](https://www.python.org/downloads/). If you already have Python installed, you can find out which version when you start the python interpreter.
 
 Note that EBI now uses HTTPS servers. This can create a problem when using Python 3 on a Mac due to an oft-missed
 installation step. Please run the "Install Certificates.command" command to ensure your Python 3 installation on
@@ -72,11 +68,11 @@ print(" -- update complete")
 
 ## Installing and running the scripts
 
-Download the [latest release](https://github.com/enasequence/enaBrowserTools/releases/latest) and extract it to the preferred location on your computer. You will now have the enaBrowserTools folder, containing both the python 2 and 3 option scripts.  If you are using a Unix/Linux or Mac computer, we suggest you add the following aliases to your .bashrc or .bash_profile file. Where INSTALLATION_DIR is the location where you have saved the enaBrowserTools to and PYTHON_CHOICE will depend on whether you are using the Python 2 or Python 3 scripts.
+Download the [latest release](https://github.com/enasequence/enaBrowserTools/releases/latest) and extract it to the preferred location on your computer. You will now have the enaBrowserTools folder containing the python 3 scripts.  If you are using a Unix/Linux or Mac computer, we suggest you add the following aliases to your .bashrc or .bash_profile file. Where INSTALLATION_DIR is the location where you have saved the enaBrowserTools.
 
 ```
-alias enaDataGet=INSTALLATION_DIR/enaBrowserTools/PYTHON_CHOICE/enaDataGet
-alias enaGroupGet=INSTALLATION_DIR/enaBrowserTools/PYTHON_CHOICE/enaGroupGet
+alias enaDataGet=INSTALLATION_DIR/enaBrowserTools/python3/enaDataGet
+alias enaGroupGet=INSTALLATION_DIR/enaBrowserTools/python3/enaGroupGet
 ```
 
 This will allow you to run the tools from any location on your computer.
@@ -85,7 +81,7 @@ You can run install and run these scripts on Windows as you would in Unix/Linux 
 
 For example, instead of calling ```enaDataGet```
 
-you would need to call ```python INSTALLATION_DIR/enaBrowserTools/PYTHON_CHOICE/enaDataGet.py```
+you would need to call ```python INSTALLATION_DIR/enaBrowserTools/python3/enaDataGet.py```
 
 We will look more into the Windows equivalent of aliases to run batch files from the command line and hopefully be able to provide a better solution to Windows users shortly.
 

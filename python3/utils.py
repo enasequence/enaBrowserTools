@@ -113,15 +113,15 @@ wgs_prefix_pattern = re.compile('^[A-Z]{4}[0-9]{2}$')
 wgs_master_pattern = re.compile('^[A-Z]{4}[0-9]{2}[0]{6}$')
 unversion_wgs_prefix_pattern = re.compile('^[A-Z]{4}$')
 unversion_wgs_master_pattern = re.compile('^[A-Z]{4}[0]{8}$')
-run_pattern = re.compile('^[EDS]RR[0-9]{6,7}$')
-experiment_pattern = re.compile('^[EDS]RX[0-9]{6,7}$')
-analysis_pattern = re.compile('^[EDS]RZ[0-9]{6,7}$')
+run_pattern = re.compile('^[EDS]RR[0-9]{6,}$')
+experiment_pattern = re.compile('^[EDS]RX[0-9]{6,}$')
+analysis_pattern = re.compile('^[EDS]RZ[0-9]{6,}$')
 assembly_pattern = re.compile('^GCA_[0-9]{9}(\.[0-9]+)?$')
-study_pattern_1 = re.compile('^[EDS]RP[0-9]{6,7}$')
+study_pattern_1 = re.compile('^[EDS]RP[0-9]{6,}$')
 study_pattern_2 = re.compile('^PRJ[EDN][AB][0-9]+$')
 sample_pattern_1 = re.compile('^SAM[ND][0-9]{8}$')
 sample_pattern_2 = re.compile('^SAMEA[0-9]{6,}$')
-sample_pattern_3 = re.compile('^[EDS]RS[0-9]{6,7}$')
+sample_pattern_3 = re.compile('^[EDS]RS[0-9]{6,}$')
 
 enaBrowserTools_path = os.path.dirname(os.path.dirname(__file__))
 
@@ -236,6 +236,8 @@ def get_record_url(accession, output_format):
 def is_available(accession, output_format):
     if is_taxid(accession):
         url = get_record_url('Taxon:{0}'.format(accession), XML_FORMAT)
+    elif is_study(accession) or is_sample(accession) or is_assembly(accession):
+        url = get_record_url(accession, XML_FORMAT)
     else:
         url = get_record_url(accession, output_format)
         if url == None:
@@ -243,7 +245,7 @@ def is_available(accession, output_format):
     try:
         print('Checking availability of ' + url)
         response = requests.get(url)
-        return response.status_code == 200
+        return response.status_code == 200 and len(response.content) != 0
     except urlerror.URLError as e:
         if 'CERTIFICATE_VERIFY_FAILED' in str(e):
             print ('Error verifying SSL certificate. Have you run "Install Certificates" as part of your Python3 installation?')
@@ -308,7 +310,7 @@ def get_ftp_file(ftp_url, dest_dir):
 
 def get_aspera_file(aspera_url, dest_dir):
     try:
-        filename = urlparse.unquote(aspera_url.split('/')[-1])
+        filename = aspera_url.split('/')[-1]
         dest_file = os.path.join(dest_dir, filename)
         asperaretrieve(aspera_url, dest_dir, dest_file)
         return True
@@ -355,7 +357,7 @@ def get_ftp_file_with_md5_check(ftp_url, dest_dir, md5):
 
 def get_aspera_file_with_md5_check(aspera_url, dest_dir, md5):
     try:
-        filename = urlparse.unquote(aspera_url.split('/')[-1])
+        filename = aspera_url.split('/')[-1]
         dest_file = os.path.join(dest_dir, filename)
         success = asperaretrieve(aspera_url, dest_dir, dest_file)
         if success:
@@ -607,7 +609,7 @@ def is_empty_dir(target_dir):
 
 def print_error():
     sys.stderr.write('ERROR: Something unexpected went wrong please try again.\n')
-    sys.stderr.write('If problem persists, please contact datasubs@ebi.ac.uk for assistance, with the above error details.\n')
+    sys.stderr.write('If problem persists, please contact ENA (https://www.ebi.ac.uk/ena/browser/support) for assistance, with the above error details.\n')
 
 def get_divisor(record_cnt):
     if record_cnt <= 10000:
