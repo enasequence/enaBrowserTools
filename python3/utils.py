@@ -277,7 +277,7 @@ def download_record(dest_dir, accession, output_format, expanded=False):
         dest_file = get_destination_file(dest_dir, accession, output_format)
         url = get_record_url(accession, output_format)
         if expanded:
-            url = url + '&expanded=true'
+            url = url + '?expanded=true'
         download_single_record(url, dest_file)
         return True
     except Exception as e:
