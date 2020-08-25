@@ -274,6 +274,8 @@ def download_single_record(url, dest_file):
 
 def download_record(dest_dir, accession, output_format, expanded=False):
     try:
+        accession_dir = os.path.join(dest_dir, accession)
+        create_dir(accession_dir)
         dest_file = get_destination_file(dest_dir, accession, output_format)
         url = get_record_url(accession, output_format)
         if expanded:
