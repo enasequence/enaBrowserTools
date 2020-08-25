@@ -307,7 +307,8 @@ def get_ftp_file(ftp_url, dest_dir):
         urlrequest.urlretrieve(ftp_url, dest_file)
         return True
     except Exception as e:
-        print ("Error with FTP transfer: {0}".format(e))
+        sys.stderr.write("Error with FTP transfer: {0}".format(e))
+        sys.stderr.write("Error with FTP transfer occurred for file: {}".format(filename))
         return False
 
 def get_aspera_file(aspera_url, dest_dir):
@@ -316,8 +317,9 @@ def get_aspera_file(aspera_url, dest_dir):
         dest_file = os.path.join(dest_dir, filename)
         asperaretrieve(aspera_url, dest_dir, dest_file)
         return True
-    except Exception:
-        print ("Error with FTP transfer: {0}".format(e))
+    except Exception as e:
+        sys.stderr.write("Error with FTP transfer: {0}".format(e))
+        sys.stderr.write("Error with FTP transfer occurred for file: {}".format(filename))
         return False
 
 def get_md5(filepath):
@@ -355,6 +357,7 @@ def get_ftp_file_with_md5_check(ftp_url, dest_dir, md5):
         return check_md5(dest_file, md5)
     except Exception as e:
         sys.stderr.write("Error with FTP transfer: {0}\n".format(e))
+        sys.stderr.write("Error with FTP transfer occurred for file: {}".format(filename))
         return False
 
 def get_aspera_file_with_md5_check(aspera_url, dest_dir, md5):
@@ -367,6 +370,7 @@ def get_aspera_file_with_md5_check(aspera_url, dest_dir, md5):
         return False
     except Exception as e:
         sys.stderr.write("Error with Aspera transfer: {0}\n".format(e))
+        sys.stderr.write("Error with Aspera transfer occurred for file: {}".format(filename))
         return False
 
 def set_aspera_variables(filepath):
@@ -469,7 +473,17 @@ def get_nonversioned_wgs_ftp_url(wgs_set, status, output_format):
 def get_report_from_portal(url):
     request = urlrequest.Request(url)
     gcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
-    return urlrequest.urlopen(request, context=gcontext)
+    response = urlrequest.urlopen(request, context=gcontext)
+    if response.status == 200:
+        return response
+    elif response.status == 204:
+        sys.stderr.write(
+            'ERROR: No records of the requested data group are available associated with the provided accession')
+        sys.exit(1)
+    else:
+        sys.stderr.write('ERROR: ' + response.msg + '\n')
+        sys.stderr.write('ERROR: Unable to fetch data from url: ' + url + '\n')
+        sys.exit(1)
 
 def download_report_from_portal(url):
     response = get_report_from_portal(url)
