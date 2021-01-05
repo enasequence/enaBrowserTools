@@ -109,12 +109,10 @@ sequence_pattern_1 = re.compile('^[A-Z]{1}[0-9]{5}(\.[0-9]+)?$')
 sequence_pattern_2 = re.compile('^[A-Z]{2}[0-9]{6}(\.[0-9]+)?$')
 wgs_sequence_pattern = re.compile('^[A-Z]{4}[0-9]{8,9}(\.[0-9]+)?$')
 coding_pattern = re.compile('^[A-Z]{3}[0-9]{5}(\.[0-9]+)?$')
-wgs_prefix_pattern_1 = re.compile('^[A-Z]{4}[0-9]{2}$')
-wgs_prefix_pattern_2 = re.compile('^[A-Z]{6}[0-9]{2}$')
+wgs_prefix_pattern = re.compile('^([A-Z]{4}|[A-Z]{6})[0-9]{2}$')
 wgs_master_pattern_1 = re.compile('^[A-Z]{4}[0-9]{2}[0]{6}$')
 wgs_master_pattern_2 = re.compile('^[A-Z]{6}[0-9]{2}[0]{7}$')
-unversion_wgs_prefix_pattern_1 = re.compile('^([A-Z]{4})$')
-unversion_wgs_prefix_pattern_2 = re.compile('^([A-Z]{6})$')
+unversion_wgs_prefix_pattern = re.compile('^([A-Z]{4}|[A-Z]{6})$')
 unversion_wgs_master_pattern_1 = re.compile('^[A-Z]{4}[0]{8}$')
 unversion_wgs_master_pattern_2 = re.compile('^[A-Z]{6}[0]{9}$')
 run_pattern = re.compile('^[EDS]RR[0-9]{6,}$')
@@ -139,19 +137,16 @@ def is_coding(accession):
     return coding_pattern.match(accession)
 
 def is_wgs_set(accession):
-    return wgs_prefix_pattern_1.match(accession) \
+    return wgs_prefix_pattern.match(accession) \
         or wgs_master_pattern_1.match(accession) \
-        or wgs_prefix_pattern_2.match(accession) \
         or wgs_master_pattern_2.match(accession) \
-        or unversion_wgs_prefix_pattern_1.match(accession) \
+        or unversion_wgs_prefix_pattern.match(accession) \
         or unversion_wgs_master_pattern_1.match(accession)\
-        or unversion_wgs_prefix_pattern_2.match(accession) \
         or unversion_wgs_master_pattern_2.match(accession)
 
 def is_unversioned_wgs_set(accession):
-    return unversion_wgs_prefix_pattern_1.match(accession) \
+    return unversion_wgs_prefix_pattern.match(accession) \
        or unversion_wgs_master_pattern_1.match(accession) \
-       or unversion_wgs_prefix_pattern_2.match(accession) \
        or unversion_wgs_master_pattern_2.match(accession)
 
 def is_run(accession):
