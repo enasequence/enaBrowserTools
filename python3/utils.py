@@ -109,10 +109,10 @@ sequence_pattern_1 = re.compile('^[A-Z]{1}[0-9]{5}(\.[0-9]+)?$')
 sequence_pattern_2 = re.compile('^[A-Z]{2}[0-9]{6}(\.[0-9]+)?$')
 wgs_sequence_pattern = re.compile('^[A-Z]{4}[0-9]{8,9}(\.[0-9]+)?$')
 coding_pattern = re.compile('^[A-Z]{3}[0-9]{5}(\.[0-9]+)?$')
-wgs_prefix_pattern = re.compile('^[A-Z]{4}[0-9]{2}$')
-wgs_master_pattern = re.compile('^[A-Z]{4}[0-9]{2}[0]{6}$')
-unversion_wgs_prefix_pattern = re.compile('^[A-Z]{4}$')
-unversion_wgs_master_pattern = re.compile('^[A-Z]{4}[0]{8}$')
+wgs_prefix_pattern = re.compile('^([A-Z]{4}|[A-Z]{6})[0-9]{2}$')
+wgs_master_pattern = re.compile('^([A-Z]{4}|[A-Z]{6})[0-9]{2}[0]{6,9}$')
+unversion_wgs_prefix_pattern = re.compile('^([A-Z]{4}|[A-Z]{6})$')
+unversion_wgs_master_pattern = re.compile('^([A-Z]{4}|[A-Z]{6})[0]{8,11}$')
 run_pattern = re.compile('^[EDS]RR[0-9]{6,}$')
 experiment_pattern = re.compile('^[EDS]RX[0-9]{6,}$')
 analysis_pattern = re.compile('^[EDS]RZ[0-9]{6,}$')
@@ -142,7 +142,7 @@ def is_wgs_set(accession):
 
 def is_unversioned_wgs_set(accession):
     return unversion_wgs_prefix_pattern.match(accession) \
-        or unversion_wgs_master_pattern.match(accession)
+       or unversion_wgs_master_pattern.match(accession)
 
 def is_run(accession):
     return run_pattern.match(accession)
@@ -274,10 +274,12 @@ def download_single_record(url, dest_file):
 
 def download_record(dest_dir, accession, output_format, expanded=False):
     try:
+        accession_dir = os.path.join(dest_dir, accession)
+        create_dir(accession_dir)
         dest_file = get_destination_file(dest_dir, accession, output_format)
         url = get_record_url(accession, output_format)
         if expanded:
-            url = url + '&expanded=true'
+            url = url + '?expanded=true'
         download_single_record(url, dest_file)
         return True
     except Exception as e:
@@ -305,7 +307,8 @@ def get_ftp_file(ftp_url, dest_dir):
         urlrequest.urlretrieve(ftp_url, dest_file)
         return True
     except Exception as e:
-        print ("Error with FTP transfer: {0}".format(e))
+        sys.stderr.write("Error with FTP transfer: {0}".format(e))
+        sys.stderr.write("Error with FTP transfer occurred for file: {}".format(filename))
         return False
 
 def get_aspera_file(aspera_url, dest_dir):
@@ -314,8 +317,9 @@ def get_aspera_file(aspera_url, dest_dir):
         dest_file = os.path.join(dest_dir, filename)
         asperaretrieve(aspera_url, dest_dir, dest_file)
         return True
-    except Exception:
-        print ("Error with FTP transfer: {0}".format(e))
+    except Exception as e:
+        sys.stderr.write("Error with FTP transfer: {0}".format(e))
+        sys.stderr.write("Error with FTP transfer occurred for file: {}".format(filename))
         return False
 
 def get_md5(filepath):
@@ -353,6 +357,7 @@ def get_ftp_file_with_md5_check(ftp_url, dest_dir, md5):
         return check_md5(dest_file, md5)
     except Exception as e:
         sys.stderr.write("Error with FTP transfer: {0}\n".format(e))
+        sys.stderr.write("Error with FTP transfer occurred for file: {}".format(filename))
         return False
 
 def get_aspera_file_with_md5_check(aspera_url, dest_dir, md5):
@@ -365,6 +370,7 @@ def get_aspera_file_with_md5_check(aspera_url, dest_dir, md5):
         return False
     except Exception as e:
         sys.stderr.write("Error with Aspera transfer: {0}\n".format(e))
+        sys.stderr.write("Error with Aspera transfer occurred for file: {}".format(filename))
         return False
 
 def set_aspera_variables(filepath):
@@ -467,7 +473,17 @@ def get_nonversioned_wgs_ftp_url(wgs_set, status, output_format):
 def get_report_from_portal(url):
     request = urlrequest.Request(url)
     gcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
-    return urlrequest.urlopen(request, context=gcontext)
+    response = urlrequest.urlopen(request, context=gcontext)
+    if response.status == 200:
+        return response
+    elif response.status == 204:
+        sys.stderr.write(
+            'ERROR: No records of the requested data group are available associated with the provided accession')
+        sys.exit(1)
+    else:
+        sys.stderr.write('ERROR: ' + response.msg + '\n')
+        sys.stderr.write('ERROR: Unable to fetch data from url: ' + url + '\n')
+        sys.exit(1)
 
 def download_report_from_portal(url):
     response = get_report_from_portal(url)
