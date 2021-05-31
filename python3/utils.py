@@ -452,13 +452,13 @@ def get_wgs_file_ext(output_format):
         return WGS_MASTER_EXT
 
 def get_wgs_ftp_url(wgs_set, status, output_format):
-    base_url = WGS_FTP_BASE + '/' + status + '/' + wgs_set[:2].lower() + '/' + wgs_set
+    base_url = WGS_FTP_BASE + '/' + status + '/' + wgs_set[:3].lower() + '/' + wgs_set
     return base_url + get_wgs_file_ext(output_format)
 
 def get_nonversioned_wgs_ftp_url(wgs_set, status, output_format):
     ftp_url = 'ftp.ebi.ac.uk'
-    base_dir = WGS_FTP_DIR + '/' + status + '/' + wgs_set[:2].lower()
-    base_url = WGS_FTP_BASE + '/' + status + '/' + wgs_set[:2].lower()
+    base_dir = WGS_FTP_DIR + '/' + status + '/' + wgs_set[:3].lower()
+    base_url = WGS_FTP_BASE + '/' + status + '/' + wgs_set[:3].lower()
     ftp = ftplib.FTP(ftp_url)
     ftp.login()
     ftp.cwd(base_dir)
