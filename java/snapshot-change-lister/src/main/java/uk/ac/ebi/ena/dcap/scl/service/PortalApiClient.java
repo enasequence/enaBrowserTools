@@ -13,11 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ******************************************************************************/
-package uk.ac.ebi.ena.dcap.scl;
+package uk.ac.ebi.ena.dcap.scl.service;
 
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
+import org.apache.http.HttpEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
 import org.springframework.stereotype.Component;
 import uk.ac.ebi.ena.dcap.scl.model.DataType;
 
@@ -29,7 +34,7 @@ import java.net.URL;
 
 @Component
 @Slf4j
-public class RestClient {
+public class PortalApiClient {
 
     static final String URL = "https://www.ebi.ac.uk/ena/portal/api/search?result=%s&fields=accession," +
             "last_updated&sortFields=accession&limit=0";
@@ -37,10 +42,20 @@ public class RestClient {
     @SneakyThrows
     public File getLatestSnapshot(DataType dataType, File outputFile) {
         URL url = new URL(String.format(URL, dataType.name().toLowerCase()));
-        try (InputStream in = url.openStream();
-             OutputStream out = new FileOutputStream(outputFile)) {
-            IOUtils.copyLarge(in, out);
+
+        log.info("calling:{}", url);
+        CloseableHttpClient client = HttpClients.createDefault();
+        HttpGet httpGet = new HttpGet(url.toString());
+        try (CloseableHttpResponse response1 = client.execute(httpGet)) {
+            final HttpEntity entity = response1.getEntity();
+            if (entity != null) {
+                try (InputStream in = entity.getContent();
+                     OutputStream out = new FileOutputStream(outputFile)) {
+                    IOUtils.copyLarge(in, out);
+                }
+            }
         }
+        log.info("finished new snapshot pull from ENA");
         return outputFile;
     }
 }

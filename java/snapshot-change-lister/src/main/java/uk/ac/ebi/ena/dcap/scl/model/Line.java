@@ -32,11 +32,15 @@ public class Line {
     public static Line POISON = new Line(null, null);
 
     private String acc;
-    private Date lasteUpdated;
+    private Date lastUpdated;
 
     @SneakyThrows
     public static Line of(String s, DateFormat df) {
         final String[] split = StringUtils.split(s);
-        return new Line(split[0], df.parse(split[1]));
+        if (split.length == 2) {
+            return new Line(split[0], df.parse(split[1]));
+        } else {
+            return new Line(split[0], null);
+        }
     }
 }

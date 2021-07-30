@@ -20,7 +20,7 @@ plugins {
 }
 
 group = 'uk.ac.ebi.ena.dcap'
-version = '0.0.1-SNAPSHOT'
+version = '0.0.3'
 sourceCompatibility = '1.8'
 
 configurations {
@@ -36,7 +36,7 @@ repositories {
 dependencies {
     implementation 'org.apache.commons:commons-lang3:3.4'
     implementation group: 'commons-io', name: 'commons-io', version: '2.7'
-
+    implementation group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.13'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
@@ -52,3 +52,12 @@ bootRun {
         args project.args.split('\\s+')
     }
 }
+
+task copyTask(type: Copy) {
+    from 'build/libs'
+    into 'F:/deploy/uniprot'
+    include 'snapshot-change-lister-' + project.version + '.jar'
+}
+
+bootJar.finalizedBy copyTask
+

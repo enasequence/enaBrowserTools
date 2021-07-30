@@ -22,6 +22,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 import uk.ac.ebi.ena.dcap.scl.model.DataType;
+import uk.ac.ebi.ena.dcap.scl.service.MainService;
 
 import java.io.File;
 import java.text.DateFormat;
