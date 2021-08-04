@@ -38,7 +38,7 @@ You need to provide 3 arguments.
     enough disk space available.
 
 e.g. 
-java -jar <path>/snapshot-change-lister-0.0.3.jar --dataType=CODING --previousSnapshot=<path>/coding_20210701.tsv --outputLocation=<path>
+java -jar [path]/snapshot-change-lister-0.0.3.jar --dataType=CODING --previousSnapshot=[path]/coding_20210701.tsv --outputLocation=[path]
 
 If this program were run on 2021-08-03, it would create 3 new files in the outputLocation folder.
 
