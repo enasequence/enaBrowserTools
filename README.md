@@ -1,6 +1,7 @@
 # enaBrowserTools
 
 enaBrowserTools is a set of scripts that interface with the ENA web services to download data from ENA easily, without any knowledge of scripting required.
+For a Java based command line downloader tool, please see https://github.com/enasequence/ena-ftp-downloader/.
 
 # License
 
