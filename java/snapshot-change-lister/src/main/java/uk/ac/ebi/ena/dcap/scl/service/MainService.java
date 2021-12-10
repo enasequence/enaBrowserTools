@@ -19,10 +19,17 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessagePreparator;
 import org.springframework.stereotype.Service;
 import uk.ac.ebi.ena.dcap.scl.model.DataType;
 import uk.ac.ebi.ena.dcap.scl.model.Line;
 
+import javax.mail.Message;
+import javax.mail.MessagingException;
+import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeMessage;
 import java.io.*;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -38,6 +45,7 @@ public class MainService {
 
     @Autowired
     PortalApiClient portalApiClient;
+
 
     public File writeLatestSnapshot(DataType dataType, File outputLocation, String fileName) {
 
@@ -167,5 +175,7 @@ public class MainService {
             queue.put(POISON);
         }
     }
+
+
 
 }

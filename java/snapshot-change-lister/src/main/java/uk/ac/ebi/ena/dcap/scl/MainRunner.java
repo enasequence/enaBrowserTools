@@ -16,14 +16,23 @@
 package uk.ac.ebi.ena.dcap.scl;
 
 import lombok.NoArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessagePreparator;
 import org.springframework.stereotype.Component;
 import uk.ac.ebi.ena.dcap.scl.model.DataType;
 import uk.ac.ebi.ena.dcap.scl.service.MainService;
 
+import javax.mail.Message;
+import javax.mail.MessagingException;
+import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeMessage;
 import java.io.File;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -45,9 +54,16 @@ public class MainRunner implements CommandLineRunner {
     @Value("${outputLocation}")
     public String outputLocationPath;
 
+    @Value("${email:#{null}}")
+    public String email;
+
     @Autowired
     private MainService mainService;
 
+    @Autowired
+    JavaMailSender mailSender;
+
+    @SneakyThrows
     @Override
     public void run(String... args) {
         DataType dataType = DataType.valueOf(dataTypeStr);
@@ -57,7 +73,40 @@ public class MainRunner implements CommandLineRunner {
         assert outputLocation.canWrite();
 
         String name = dataType.name().toLowerCase() + "_" + DATE_FORMAT.format(new Date());
-        File newSnapshot = mainService.writeLatestSnapshot(dataType, outputLocation, name);
-        mainService.compareSnapshots(prevSnapshot, newSnapshot, outputLocation, name);
+        try {
+            File newSnapshot = mainService.writeLatestSnapshot(dataType, outputLocation, name);
+            mainService.compareSnapshots(prevSnapshot, newSnapshot, outputLocation, name);
+            if (StringUtils.isNotBlank(email)) {
+                sendMail(email, dataTypeStr + " change lister completed",
+                        "Compared " + prevSnapshot + " & " + newSnapshot + " in " + outputLocation);
+            }
+        } catch (Exception e) {
+            log.error("error:", e);
+            if (StringUtils.isNotBlank(email)) {
+                sendMail(email, dataTypeStr + " change lister failed", ExceptionUtils.getStackTrace(e));
+            }
+        }
+    }
+
+    public void sendMail(String email, String subject, String body, String... args) throws MessagingException {
+        MimeMessagePreparator preparator = new MimeMessagePreparator() {
+
+            public void prepare(MimeMessage mimeMessage) throws Exception {
+
+                mimeMessage.setRecipient(Message.RecipientType.TO,
+                        new InternetAddress(email));
+                mimeMessage.setFrom(new InternetAddress("datalib@ebi.ac.uk"));
+                mimeMessage.setText(body
+                        + System.lineSeparator() + StringUtils.join(args, " "));
+                mimeMessage.setSubject(subject);
+            }
+        };
+
+        try {
+            mailSender.send(preparator);
+        } catch (Exception ex) {
+            // simply log it and go on...
+            log.error("Error sending email", ex);
+        }
     }
 }

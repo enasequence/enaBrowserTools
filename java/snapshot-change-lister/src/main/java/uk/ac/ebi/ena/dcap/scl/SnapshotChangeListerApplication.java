@@ -17,6 +17,9 @@ package uk.ac.ebi.ena.dcap.scl;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Bean;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.JavaMailSenderImpl;
 
 @SpringBootApplication
 public class SnapshotChangeListerApplication {
@@ -25,4 +28,11 @@ public class SnapshotChangeListerApplication {
         SpringApplication.run(SnapshotChangeListerApplication.class, args);
     }
 
+    @Bean
+    public JavaMailSender javaMailService() {
+        JavaMailSenderImpl javaMailSender = new JavaMailSenderImpl();
+        javaMailSender.setHost("smtp.ebi.ac.uk");
+        javaMailSender.setPort(25);
+        return javaMailSender;
+    }
 }
