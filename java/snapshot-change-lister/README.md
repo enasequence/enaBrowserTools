@@ -36,17 +36,24 @@ You need to provide 3 arguments.
    
 3. outputLocation : Local folder where the new complete report and the 2 change lists are to be created. Ensure there's
     enough disk space available.
+    
+4. email : optionally provide an email address to be notified when the process is complete
 
 e.g. 
-java -jar [path]/snapshot-change-lister-0.0.3.jar --dataType=CODING --previousSnapshot=[path]/coding_20210701.tsv --outputLocation=[path]
+java -jar [path]/snapshot-change-lister-0.0.3.jar --dataType=CODING --previousSnapshot=[path]/coding_20210701.tsv --outputLocation=[path] --email=email@email.com
 
-If this program were run on 2021-08-03, it would create 3 new files in the outputLocation folder.
+e.g. If this program were run on 2021-08-03, it would create 3 new files in the outputLocation folder.
 
 coding_20210803.tsv
 
 coding_20210803_new-or-updated.tsv
 
 coding_20210803_deleted.tsv
+
+Example for running in LSF:
+
+bsub -n 2 -M 10000 -J coding-snapshot-change-lister -o /path/snapshot-changes/output-20211210.log java -jar  snapshot-change-lister-1.0.0.jar --email=email@email.com --dataType=CODING --previousSnapshot=/path/coding_20211028.tsv --outputLocation=/path/
+
 
 # Support
 
