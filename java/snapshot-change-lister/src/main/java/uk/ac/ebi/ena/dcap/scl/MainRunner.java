@@ -27,6 +27,7 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessagePreparator;
 import org.springframework.stereotype.Component;
 import uk.ac.ebi.ena.dcap.scl.model.DataType;
+import uk.ac.ebi.ena.dcap.scl.model.DiffFiles;
 import uk.ac.ebi.ena.dcap.scl.service.MainService;
 
 import javax.mail.Message;
@@ -57,6 +58,18 @@ public class MainRunner implements CommandLineRunner {
     @Value("${email:#{null}}")
     public String email;
 
+    @Value("${query:#{null}}")
+    public String query;
+
+    @Value("${downloadData:#{false}}")
+    public boolean downloadData;
+
+    @Value("${annotationOnly:#{false}}")
+    public boolean annotationOnly;
+
+    @Value("${format:embl}")
+    public String format;
+
     @Autowired
     private MainService mainService;
 
@@ -74,8 +87,11 @@ public class MainRunner implements CommandLineRunner {
 
         String name = dataType.name().toLowerCase() + "_" + DATE_FORMAT.format(new Date());
         try {
-            File newSnapshot = mainService.writeLatestSnapshot(dataType, outputLocation, name);
-            mainService.compareSnapshots(prevSnapshot, newSnapshot, outputLocation, name);
+            File newSnapshot = mainService.writeLatestSnapshot(dataType, outputLocation, name, query);
+            final DiffFiles diffFiles = mainService.compareSnapshots(prevSnapshot, newSnapshot, outputLocation, name);
+            if (downloadData) {
+                mainService.downloadData(diffFiles.getNewOrChangedList(), format, annotationOnly);
+            }
             if (StringUtils.isNotBlank(email)) {
                 sendMail(email, dataTypeStr + " change lister completed",
                         "Compared " + prevSnapshot + " & " + newSnapshot + " in " + outputLocation);

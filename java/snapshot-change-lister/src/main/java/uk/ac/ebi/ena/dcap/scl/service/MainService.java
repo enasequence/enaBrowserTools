@@ -17,22 +17,23 @@ package uk.ac.ebi.ena.dcap.scl.service;
 
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessagePreparator;
 import org.springframework.stereotype.Service;
 import uk.ac.ebi.ena.dcap.scl.model.DataType;
+import uk.ac.ebi.ena.dcap.scl.model.DiffFiles;
 import uk.ac.ebi.ena.dcap.scl.model.Line;
 
-import javax.mail.Message;
-import javax.mail.MessagingException;
-import javax.mail.internet.InternetAddress;
-import javax.mail.internet.MimeMessage;
 import java.io.*;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.List;
 import java.util.concurrent.*;
 
 import static uk.ac.ebi.ena.dcap.scl.model.Line.POISON;
@@ -41,23 +42,24 @@ import static uk.ac.ebi.ena.dcap.scl.model.Line.POISON;
 @Slf4j
 public class MainService {
 
+    private static final String BROWSER_API_EMBL = "https://www.ebi.ac.uk/ena/browser/api/%s/";
     final ExecutorService executorService = Executors.newFixedThreadPool(2);
 
     @Autowired
     PortalApiClient portalApiClient;
 
 
-    public File writeLatestSnapshot(DataType dataType, File outputLocation, String fileName) {
+    public File writeLatestSnapshot(DataType dataType, File outputLocation, String fileName, String query) {
 
         File outFile = new File(outputLocation.getAbsolutePath() + File.separator + fileName + ".tsv");
         if (outFile.exists()) {
             outFile.delete();
         }
-        return portalApiClient.getLatestSnapshot(dataType, outFile);
+        return portalApiClient.getLatestSnapshot(dataType, outFile, query);
     }
 
     @SneakyThrows
-    public void compareSnapshots(File previousSnapshot, File latestSnapshot, File outputLocation, String namePrefix) {
+    public DiffFiles compareSnapshots(File previousSnapshot, File latestSnapshot, File outputLocation, String namePrefix) {
         log.info("comparing:{} and {}", previousSnapshot.getAbsolutePath(), latestSnapshot.getAbsolutePath());
         File newOrUpdated = new File(outputLocation.getAbsolutePath() + File.separator + namePrefix + "_new-or" +
                 "-updated.tsv");
@@ -139,11 +141,12 @@ public class MainService {
         executorService.shutdown();
         log.info("new records found:{}", newCount);
         log.info("records to be deleted:{}", delCount);
+        return new DiffFiles(newOrUpdated, deleted);
     }
 
     @SneakyThrows
     private boolean loadToQueues(File snapshot, BlockingQueue<Line> queue) {
-        log.info("reading from:{}", snapshot.getName());
+        log.info("reading from:{}", snapshot);
         DateFormat LAST_UPDATED_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd");
         long count = 0;
         try {
@@ -177,5 +180,34 @@ public class MainService {
     }
 
 
+    @SneakyThrows
+    public void downloadData(File newOrChangedList, String format, boolean annotationOnly) {
+        String req = String.format(BROWSER_API_EMBL, format);
 
+        final List<String> lines = Files.readAllLines(Paths.get(newOrChangedList.getAbsolutePath()));
+        log.info("downloading for:{} records in {}", lines.size(), newOrChangedList.getAbsolutePath());
+        File dataFile = new File(StringUtils.substringBeforeLast(newOrChangedList.getAbsolutePath(), ".") + ".dat");
+        if (dataFile.exists()) {
+            dataFile.delete();
+        }
+        log.info("writing to:{}", dataFile.getAbsolutePath());
+        List<List<String>> subSets = ListUtils.partition(lines, 1000);
+        try (BufferedOutputStream bw = new BufferedOutputStream(new FileOutputStream(dataFile))) {
+            subSets.stream().map(s -> StringUtils.join(s, ",")).forEach(s -> {
+                log.info("downloading:{}-{}", StringUtils.substringBefore(s,","), StringUtils.substringAfterLast(s,","));
+                try {
+                    String url = req + s;
+                    if ("embl".equalsIgnoreCase(format) && annotationOnly) {
+                        url += "?annotationOnly=true";
+                    }
+//                    log.info("req:{}", url);
+                    HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+                    InputStream inputStream = connection.getInputStream();
+                    IOUtils.copy(inputStream, bw);
+                } catch (IOException e) {
+                    log.error("Failed:" + BROWSER_API_EMBL + s, e);
+                }
+            });
+        }
+    }
 }
