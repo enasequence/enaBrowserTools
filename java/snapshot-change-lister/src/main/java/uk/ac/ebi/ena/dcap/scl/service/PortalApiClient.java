@@ -18,6 +18,7 @@ package uk.ac.ebi.ena.dcap.scl.service;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -40,8 +41,12 @@ public class PortalApiClient {
             "last_updated&sortFields=accession&limit=0";
 
     @SneakyThrows
-    public File getLatestSnapshot(DataType dataType, File outputFile) {
-        URL url = new URL(String.format(URL, dataType.name().toLowerCase()));
+    public File getLatestSnapshot(DataType dataType, File outputFile, String query) {
+        String req = String.format(URL, dataType.name().toLowerCase());
+        if (StringUtils.isNotBlank(query)) {
+            req += "&query=" + query;
+        }
+        URL url = new URL(req);
 
         log.info("calling:{}", url);
         CloseableHttpClient client = HttpClients.createDefault();
@@ -51,6 +56,7 @@ public class PortalApiClient {
             if (entity != null) {
                 try (InputStream in = entity.getContent();
                      OutputStream out = new FileOutputStream(outputFile)) {
+                    log.info("writing response");
                     IOUtils.copyLarge(in, out);
                 }
             }
