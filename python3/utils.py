@@ -529,9 +529,7 @@ def get_file_fields(accession, aspera):
         return get_ftp_file_fields(accession)
 
 def get_result(accession):
-    if is_run(accession) or is_experiment(accession):
-        return RUN_RESULT
-    elif is_sample(accession):
+    if is_run(accession) or is_experiment(accession) or is_sample(accession):
         return RUN_RESULT
     else:  # is_analysis(accession)
         return ANALYSIS_RESULT
