@@ -22,7 +22,6 @@ import ftplib
 import hashlib
 import re
 import os
-import ssl
 import subprocess
 import sys
 import urllib.request as urlrequest
@@ -472,8 +471,7 @@ def get_nonversioned_wgs_ftp_url(wgs_set, status, output_format):
 
 def get_report_from_portal(url):
     request = urlrequest.Request(url)
-    gcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
-    response = urlrequest.urlopen(request, context=gcontext)
+    response = urlrequest.urlopen(request)
     if response.status == 200:
         return response
     elif response.status == 204:
