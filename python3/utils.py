@@ -500,6 +500,8 @@ def get_accession_query(accession):
         query += 'experiment_accession="{0}"'.format(accession)
     elif is_analysis(accession):
         query += 'analysis_accession="{0}"'.format(accession)
+    elif is_sample(accession):
+        query += 'sample_accession="{0}"'.format(accession)
     return query
 
 def get_ftp_file_fields(accession):
@@ -530,6 +532,8 @@ def get_file_fields(accession, aspera):
 
 def get_result(accession):
     if is_run(accession) or is_experiment(accession):
+        return RUN_RESULT
+    elif is_sample(accession):
         return RUN_RESULT
     else:  # is_analysis(accession)
         return ANALYSIS_RESULT
