@@ -109,7 +109,7 @@ if __name__ == '__main__':
                 readGet.check_read_format(output_format)
             check_availability(accession, output_format)
             readGet.download_files(accession, output_format, dest_dir, fetch_index, fetch_meta, aspera)
-        elif utils.is_run(accession) or utils.is_experiment(accession):
+        elif utils.is_run(accession) or utils.is_experiment(accession) or utils.is_sample(accession):
             if output_format is not None:
                 readGet.check_read_format(output_format)
             check_availability(accession, output_format)
