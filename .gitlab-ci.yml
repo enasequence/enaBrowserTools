@@ -1,9 +1,9 @@
 image: openjdk:17.0.2-slim-buster
 variables:
   # increment middle digit if adding new fields or types. last digit for other minor fixes.
-  APP_VERSION: "1.0.0"
-  PROD_JAR_DIR: "/nfs/production/cochrane/ena/browser/browser-submission-loader/lib"
-  DEV_JAR_DIR:  "/nfs/production/cochrane/ena/browser/dev/browser-submission-loader/lib"
+  SUBMISSION_LOADER_APP_VERSION: "1.0.0"
+  PROD_SUBMISSION_LOADER_JAR_DIR: "/nfs/production/cochrane/ena/browser/browser-submission-loader/lib"
+  DEV_SUBMISSION_LOADER_JAR_DIR:  "/nfs/production/cochrane/ena/browser/dev/browser-submission-loader/lib"
 
 stages:
   - build
@@ -13,19 +13,14 @@ cache:
     - .gradle/wrapper
     - .gradle/caches
 
-build_dev:
+build_submission_loader_dev:
   stage: build
   before_script:
-    - sed -i -e "s/<env>/dev/" application.properties
-    - sed -i -e "s/<era_username>/$ERA_USERNAME/" -e "s/<era_password>/$ERA_PASSWORD/g" warehouse-indexer/src/main/resources/application-$ACTIVE_PROFILE.properties
-    - sed -i -e "s/<ena_username>/$ENA_USERNAME/" -e "s/<ena_password>/$ENA_PASSWORD/g" warehouse-indexer/src/main/resources/application-$ACTIVE_PROFILE.properties
-    - sed -i -e "s/<ewa_pro_username>/$EWA_PRO_USERNAME/" -e "s/<ewa_pro_password>/$EWA_PRO_PASSWORD/g" warehouse-indexer/src/main/resources/application-$ACTIVE_PROFILE.properties
-    - sed -i -e "s/<ewa_pub_username>/$EWA_PUB_USERNAME/" -e "s/<ewa_pub_password>/$EWA_PUB_PASSWORD/g" warehouse-indexer/src/main/resources/application-$ACTIVE_PROFILE.properties
-    - sed -i -e "s/<eta_username>/$ETA_DEV_DB_USERNAME/" -e "s/<eta_password>/$ETA_DEV_DB_PASSWORD/g" warehouse-indexer/src/main/resources/application-$ACTIVE_PROFILE.properties
-    - sed -i -e "s/<mongo_username>/$MONGO_USERNAME/" -e "s/<mongo_password>/$MONGO_PASSWORD/g" warehouse-indexer/src/main/resources/application-$ACTIVE_PROFILE.properties
-    - sed -i -e "s/<k8s_es_username>/$K8S_ES_USERNAME/" -e "s/<k8s_es_password>/$K8S_ES_PASSWORD/g" warehouse-indexer/src/main/resources/application-$ACTIVE_PROFILE.properties
-    - export GRADLE_USER_HOME=`pwd`/.gradle
-    - cd warehouse-indexer/
+    - sed -i -e "s/<env>/dev/" java/browser-submission-loader/src/main/resources/application.properties
+    - sed -i -e "s/<era_username>/$ERAREAD_PROD_DB_USERNAME/" -e "s/<era_password>/$ERAREAD_PROD_DB_PASSWORD/g" java/browser-submission-loader/src/main/resources/application-dev.properties
+    - sed -i -e "s/<eta_username>/$ETA_DEV_DB_USERNAME/" -e "s/<eta_password>/$ETA_DEV_DB_USERNAME/g" java/browser-submission-loader/src/main/resources/application-dev.properties
+    - export GRADLE_USER_HOME=java/browser-submission-loader/.gradle
+    - cd java/browser-submission-loader/
   script:
     - echo "$(pwd)"
     - chmod u+x gradlew
@@ -34,19 +29,29 @@ build_dev:
     - dcap-gitlab-runner
   artifacts:
     paths:
-      - warehouse-indexer/build/libs/warehouse-indexer-${APP_VERSION}.jar
-test:
-  stage: test
-  before_script:
+      - java/browser-submission-loader/build/libs/browser-submission-loader-${SUBMISSION_LOADER_APP_VERSION}.jar
 
-    - export GRADLE_USER_HOME=`pwd`/.gradle
+build_submission_loader_prod:
+  stage: build
+  before_script:
+    - sed -i -e "s/<env>/prod/" java/browser-submission-loader/src/main/resources/application.properties
+    - sed -i -e "s/<era_username>/$ERAREAD_PROD_DB_USERNAME/" -e "s/<era_password>/$ERAREAD_PROD_DB_PASSWORD/g" java/browser-submission-loader/src/main/resources/application-prod.properties
+    - sed -i -e "s/<eta_username>/$ETAPRO_PROD_DB_USERNAME/" -e "s/<eta_password>/$ETAPRO_PROD_DB_PASSWORD/g" java/browser-submission-loader/src/main/resources/application-prod.properties
+    - export GRADLE_USER_HOME=java/browser-submission-loader/.gradle
+    - cd java/browser-submission-loader/
   script:
+    - echo "$(pwd)"
     - chmod u+x gradlew
-    - ./gradlew clean test
+    - ./gradlew clean build -x test
   tags:
     - dcap-gitlab-runner
-  allow_failure: true
-deploy:
+  artifacts:
+    paths:
+      - java/browser-submission-loader/build/libs/browser-submission-loader-${SUBMISSION_LOADER_APP_VERSION}.jar
+  only:
+    - master
+
+deploy_submission_loader_dev:
   stage: deploy
   before_script:
     # Setup SSH deploy keys
@@ -55,13 +60,30 @@ deploy:
     - ssh-add <(echo "$CODON_DATALIB_SSH_PVT_KEY")
     - mkdir -p ~/.ssh
   script:
-    - chmod u+x warehouse-indexer/build/libs/warehouse-indexer-${APP_VERSION}.jar
-    - scp -o StrictHostKeyChecking=no warehouse-indexer/build/libs/warehouse-indexer-${APP_VERSION}.jar datalib@codon-login-01.ebi.ac.uk:${JAR_DIR}
-    - ssh datalib@codon-login-01.ebi.ac.uk "ln -sf ${JAR_DIR}/warehouse-indexer-${APP_VERSION}.jar ${JAR_DIR}/warehouse-indexer-es.jar"
+    - chmod u+x java/browser-submission-loader/build/libs/browser-submission-loader-${SUBMISSION_LOADER_APP_VERSION}.jar
+    - scp -o StrictHostKeyChecking=no java/browser-submission-loader/build/libs/browser-submission-loader-${SUBMISSION_LOADER_APP_VERSION}.jar datalib@codon-login-01.ebi.ac.uk:${DEV_SUBMISSION_LOADER_JAR_DIR}
+    - ssh datalib@codon-login-01.ebi.ac.uk "ln -sf ${DEV_SUBMISSION_LOADER_JAR_DIR}/browser-submission-loader-${SUBMISSION_LOADER_APP_VERSION}.jar ${DEV_SUBMISSION_LOADER_JAR_DIR}/browser-submission-loader.jar"
   tags:
     - dcap-gitlab-runner
   dependencies:
-    - build
+    - build_submission_loader_dev
+
+deploy_submission_loader_prod:
+  stage: deploy
+  before_script:
+    # Setup SSH deploy keys
+    - 'which ssh-agent || ( apt-get update && apt-get install -qq openssh-client )'
+    - eval $(ssh-agent -s)
+    - ssh-add <(echo "$CODON_DATALIB_SSH_PVT_KEY")
+    - mkdir -p ~/.ssh
+  script:
+    - chmod u+x java/browser-submission-loader/build/libs/browser-submission-loader-${SUBMISSION_LOADER_APP_VERSION}.jar
+    - scp -o StrictHostKeyChecking=no java/browser-submission-loader/build/libs/browser-submission-loader-${SUBMISSION_LOADER_APP_VERSION}.jar datalib@codon-login-01.ebi.ac.uk:${PROD_SUBMISSION_LOADER_JAR_DIR}
+    - ssh datalib@codon-login-01.ebi.ac.uk "ln -sf ${PROD_SUBMISSION_LOADER_JAR_DIR}/browser-submission-loader-${SUBMISSION_LOADER_APP_VERSION}.jar ${PROD_SUBMISSION_LOADER_JAR_DIR}/browser-submission-loader.jar"
+  tags:
+    - dcap-gitlab-runner
+  dependencies:
+    - build_submission_loader_prod
   when: manual
   only:
-    - elasticsearch-seq
+    - master
