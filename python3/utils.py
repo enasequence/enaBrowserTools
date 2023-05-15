@@ -594,22 +594,23 @@ def parse_file_search_result_line(line, accession, output_format):
     sub_filelist = split_filelist(cols[1])
     sub_md5list = split_filelist(cols[2])
     if is_analysis(accession):
-        return data_acc, sub_filelist, sub_md5list, []
+        return data_acc, sub_filelist, sub_md5list
     sra_filelist = split_filelist(cols[3])
     sra_md5list = split_filelist(cols[4])
     fastq_filelist = split_filelist(cols[5])
     fastq_md5list = split_filelist(cols[6])
-    if output_format is None and len(sub_filelist) > 0:
-        output_format = SUBMITTED_FORMAT
-    elif output_format is None and len(sra_filelist) > 0:
-        output_format = SRA_FORMAT
-    elif output_format is None:
-        output_format = FASTQ_FORMAT
+    if output_format is None:
+        if len(sub_filelist) > 0:
+            output_format = SUBMITTED_FORMAT
+        elif len(sra_filelist) > 0:
+            output_format = SRA_FORMAT
+        else:
+            output_format = FASTQ_FORMAT
     if output_format == SUBMITTED_FORMAT:
         return data_acc, sub_filelist, sub_md5list
     if output_format == SRA_FORMAT:
-        return data_acc, sra_filelist, sra_md5list, []
-    return data_acc, fastq_filelist, fastq_md5list, []
+        return data_acc, sra_filelist, sra_md5list
+    return data_acc, fastq_filelist, fastq_md5list
 
 
 def create_dir(dir_path):

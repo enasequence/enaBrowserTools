@@ -98,7 +98,7 @@ def download_files(accession, output_format, dest_dir, fetch_meta, aspera):
     lines = utils.download_report_from_portal(search_url)
 
     for line in lines[1:]:
-        data_accession, filelist, md5list, indexlist = utils.parse_file_search_result_line(
+        data_accession, filelist, md5list = utils.parse_file_search_result_line(
             line, accession, output_format)
         # create run directory if downloading all data for an experiment
         if is_experiment:
@@ -121,9 +121,6 @@ def download_files(accession, output_format, dest_dir, fetch_meta, aspera):
             md5 = md5list[i]
             if file_url != '':
                 download_file(file_url, target_dir, md5, aspera)
-        for index_file in indexlist:
-            if index_file != '':
-                download_file(index_file, target_dir, None, aspera)
     if utils.is_empty_dir(target_dir):
         print('Deleting directory ' + os.path.basename(target_dir))
         os.rmdir(target_dir)

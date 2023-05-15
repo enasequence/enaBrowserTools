@@ -102,12 +102,7 @@ if __name__ == '__main__':
                 output_format = sequenceGet.get_default_format()
             check_availability(accession, output_format)
             sequenceGet.download_sequence(dest_dir, accession, output_format, expanded)
-        elif utils.is_analysis(accession):
-            if output_format is not None:
-                readGet.check_read_format(output_format)
-            check_availability(accession, output_format)
-            readGet.download_files(accession, output_format, dest_dir, fetch_meta, aspera)
-        elif utils.is_run(accession) or utils.is_experiment(accession) or utils.is_sample(accession):
+        elif utils.is_analysis(accession) or utils.is_run(accession) or utils.is_experiment(accession) or utils.is_sample(accession):
             if output_format is not None:
                 readGet.check_read_format(output_format)
             check_availability(accession, output_format)
