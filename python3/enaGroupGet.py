@@ -51,9 +51,6 @@ def set_parser():
                         help='Expand CON scaffolds when downloading embl format (default is false)')
     parser.add_argument('-m', '--meta', action='store_true',
                         help='Download read or analysis XML in addition to data files (default is false)')
-    parser.add_argument('-i', '--index', action='store_true',
-                        help="""Download CRAM index files with submitted CRAM files, if any (default is false).
-                            This flag is ignored for fastq and sra format options. """)
     parser.add_argument('-a', '--aspera', action='store_true',
                         help='Use the aspera command line client to download, instead of FTP.')
     parser.add_argument('-as', '--aspera-settings', default=None,
@@ -74,7 +71,8 @@ def download_report(group, result, accession, temp_file, subtree):
     f.flush()
     f.close()
 
-def download_data(group, data_accession, output_format, group_dir, fetch_wgs, extract_wgs, expanded, fetch_meta, fetch_index, aspera):
+
+def download_data(group, data_accession, output_format, group_dir, fetch_wgs, extract_wgs, expanded, fetch_meta, aspera):
     if group == utils.WGS:
         print('Fetching ' + data_accession[:6])
         sequenceGet.download_wgs(group_dir, data_accession[:6], output_format)
@@ -86,7 +84,9 @@ def download_data(group, data_accession, output_format, group_dir, fetch_wgs, ex
         elif group in [utils.READ, utils.ANALYSIS]:
             readGet.download_files(data_accession, output_format, group_dir, fetch_meta, aspera)
 
-def download_data_group(group, accession, output_format, group_dir, fetch_wgs, extract_wgs, fetch_meta, fetch_index, aspera, subtree, expanded):
+
+def download_data_group(group, accession, output_format, group_dir, fetch_wgs, extract_wgs, fetch_meta, aspera,
+                        subtree, expanded):
     temp_file_path = os.path.join(group_dir, accession + '_temp.txt')
     download_report(group, utils.get_group_result(group), accession, temp_file_path, subtree)
     header = True
@@ -96,7 +96,8 @@ def download_data_group(group, accession, output_format, group_dir, fetch_wgs, e
                 header = False
                 continue
             data_accession = line.strip()
-            download_data(group, data_accession, output_format, group_dir, fetch_wgs, extract_wgs, expanded, fetch_meta, fetch_index, aspera)
+            download_data(group, data_accession, output_format, group_dir, fetch_wgs, extract_wgs, expanded, fetch_meta,
+                          aspera)
     os.remove(temp_file_path)
 
 
@@ -138,13 +139,17 @@ def download_sequence_group(accession, output_format, group_dir, subtree, expand
                                            update_accs, expanded)
     dest_file.close()
 
-def download_group(accession, group, output_format, dest_dir, fetch_wgs, extract_wgs, fetch_meta, fetch_index, aspera, subtree, expanded):
+
+def download_group(accession, group, output_format, dest_dir, fetch_wgs, extract_wgs, fetch_meta, aspera,
+                   subtree, expanded):
     group_dir = os.path.join(dest_dir, accession)
     utils.create_dir(group_dir)
     if group == utils.SEQUENCE:
         download_sequence_group(accession, output_format, group_dir, subtree, expanded)
     else:
-        download_data_group(group, accession, output_format, group_dir, fetch_wgs, extract_wgs, fetch_meta, fetch_index, aspera, subtree, expanded)
+        download_data_group(group, accession, output_format, group_dir, fetch_wgs, extract_wgs, fetch_meta, aspera,
+                            subtree, expanded)
+
 
 if __name__ == '__main__':
     parser = set_parser()
@@ -158,7 +163,6 @@ if __name__ == '__main__':
     extract_wgs = args.extract_wgs
     expanded = args.expanded
     fetch_meta = args.meta
-    fetch_index = args.index
     aspera = args.aspera
     aspera_settings = args.aspera_settings
     subtree = args.subtree
@@ -168,13 +172,12 @@ if __name__ == '__main__':
 
     if not utils.is_available(accession, output_format):
         sys.stderr.write('ERROR: Study/sample does not exist or is not available for accession provided.\n')
-        sys.stderr.write('If you believe that it should be, please contact ENA (https://www.ebi.ac.uk/ena/browser/support) for assistance.\n')
+        sys.stderr.write('If you believe that it should be, please contact ENA ('
+                         'https://www.ebi.ac.uk/ena/browser/support) for assistance.\n')
         sys.exit(1)
 
     if not utils.is_study(accession) and not utils.is_sample(accession) and not utils.is_taxid(accession):
-        sys.stderr.write(
-            'ERROR: Invalid accession. Only sample and study/project accessions or NCBI tax ID supported\n'
-        )
+        sys.stderr.write('ERROR: Invalid accession. Only sample and study/project accessions or NCBI tax ID supported\n')
         sys.exit(1)
 
     if output_format is None:
@@ -194,8 +197,8 @@ if __name__ == '__main__':
         if utils.is_taxid(accession) and group in ['read', 'analysis']:
             print('Sorry, tax ID retrieval not yet supported for read and analysis')
             sys.exit(1)
-        download_group(accession, group, output_format, dest_dir, fetch_wgs, extract_wgs, fetch_meta, fetch_index,
-                       aspera, subtree, expanded)
+        download_group(accession, group, output_format, dest_dir, fetch_wgs, extract_wgs, fetch_meta, aspera, subtree,
+                       expanded)
         print('Completed')
     except Exception:
         traceback.print_exc()

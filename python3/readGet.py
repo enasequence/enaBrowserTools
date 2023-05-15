@@ -82,7 +82,8 @@ def download_experiment_meta(run_accession, dest_dir):
         break
     download_meta(experiment_accession, dest_dir)
 
-def download_files(accession, output_format, dest_dir, fetch_index, fetch_meta, aspera):
+
+def download_files(accession, output_format, dest_dir, fetch_meta, aspera):
     accession_dir = os.path.join(dest_dir, accession)
     utils.create_dir(accession_dir)
     # download experiment xml

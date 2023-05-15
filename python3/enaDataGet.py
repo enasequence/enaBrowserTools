@@ -47,9 +47,6 @@ def set_parser():
                         help='Expand CON scaffolds when downloading embl format (default is false)')
     parser.add_argument('-m', '--meta', action='store_true',
                         help='Download read or analysis XML in addition to data files (default is false)')
-    parser.add_argument('-i', '--index', action='store_true',
-                        help="""Download CRAM index files with submitted CRAM files, if any (default is false).
-                            This flag is ignored for fastq and sra format options. """)
     parser.add_argument('-a', '--aspera', action='store_true',
                         help='Use the aspera command line client to download, instead of FTP.')
     parser.add_argument('-as', '--aspera-settings', default=None,
@@ -77,7 +74,6 @@ if __name__ == '__main__':
     extract_wgs = args.extract_wgs
     expanded = args.expanded
     fetch_meta = args.meta
-    fetch_index = args.index
     aspera = args.aspera
     aspera_settings = args.aspera_settings
 
@@ -110,12 +106,12 @@ if __name__ == '__main__':
             if output_format is not None:
                 readGet.check_read_format(output_format)
             check_availability(accession, output_format)
-            readGet.download_files(accession, output_format, dest_dir, fetch_index, fetch_meta, aspera)
+            readGet.download_files(accession, output_format, dest_dir, fetch_meta, aspera)
         elif utils.is_run(accession) or utils.is_experiment(accession) or utils.is_sample(accession):
             if output_format is not None:
                 readGet.check_read_format(output_format)
             check_availability(accession, output_format)
-            readGet.download_files(accession, output_format, dest_dir, fetch_index, fetch_meta, aspera)
+            readGet.download_files(accession, output_format, dest_dir, fetch_meta, aspera)
         else:
             sys.stderr.write('ERROR: Invalid accession provided\n')
             sys.exit(1)

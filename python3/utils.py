@@ -91,7 +91,6 @@ SEQUENCE_RELEASE_RESULT = 'result=sequence_release'
 FASTQ_FIELD = 'fastq_ftp'
 SUBMITTED_FIELD = 'submitted_ftp'
 SRA_FIELD = 'sra_ftp'
-INDEX_FIELD = 'cram_index_ftp'
 FASTQ_MD5_FIELD = 'fastq_md5'
 SUBMITTED_MD5_FIELD = 'submitted_md5'
 SRA_MD5_FIELD = 'sra_md5'
@@ -99,7 +98,6 @@ INDEX_MD5_FIELD = None
 FASTQ_ASPERA_FIELD = 'fastq_aspera'
 SUBMITTED_ASPERA_FIELD = 'submitted_aspera'
 SRA_ASPERA_FIELD = 'sra_aspera'
-INDEX_ASPERA_FIELD = 'cram_index_aspera'
 
 sequence_pattern_1 = re.compile('^[A-Z]{1}[0-9]{5}(\.[0-9]+)?$')
 sequence_pattern_2 = re.compile('^[A-Z]{2}[0-9]{6}(\.[0-9]+)?$')
@@ -549,7 +547,6 @@ def get_ftp_file_fields(accession):
     fields += SUBMITTED_FIELD + ',' + SUBMITTED_MD5_FIELD
     if is_analysis(accession):
         return fields
-    fields += ',' + INDEX_FIELD
     fields += ',' + SRA_FIELD + ',' + SRA_MD5_FIELD
     fields += ',' + FASTQ_FIELD + ',' + FASTQ_MD5_FIELD
     return fields
@@ -560,7 +557,6 @@ def get_aspera_file_fields(accession):
     fields += SUBMITTED_ASPERA_FIELD + ',' + SUBMITTED_MD5_FIELD
     if is_analysis(accession):
         return fields
-    fields += ',' + INDEX_ASPERA_FIELD
     fields += ',' + SRA_ASPERA_FIELD + ',' + SRA_MD5_FIELD
     fields += ',' + FASTQ_ASPERA_FIELD + ',' + FASTQ_MD5_FIELD
     return fields
@@ -599,19 +595,18 @@ def parse_file_search_result_line(line, accession, output_format):
     sub_md5list = split_filelist(cols[2])
     if is_analysis(accession):
         return data_acc, sub_filelist, sub_md5list, []
-    indexlist = split_filelist(cols[3])
-    sra_filelist = split_filelist(cols[4])
-    sra_md5list = split_filelist(cols[5])
-    fastq_filelist = split_filelist(cols[6])
-    fastq_md5list = split_filelist(cols[7])
-    if (output_format is None and len(sub_filelist) > 0):
+    sra_filelist = split_filelist(cols[3])
+    sra_md5list = split_filelist(cols[4])
+    fastq_filelist = split_filelist(cols[5])
+    fastq_md5list = split_filelist(cols[6])
+    if output_format is None and len(sub_filelist) > 0:
         output_format = SUBMITTED_FORMAT
-    elif (output_format is None and len(sra_filelist) > 0):
+    elif output_format is None and len(sra_filelist) > 0:
         output_format = SRA_FORMAT
     elif output_format is None:
         output_format = FASTQ_FORMAT
     if output_format == SUBMITTED_FORMAT:
-        return data_acc, sub_filelist, sub_md5list, indexlist
+        return data_acc, sub_filelist, sub_md5list
     if output_format == SRA_FORMAT:
         return data_acc, sra_filelist, sra_md5list, []
     return data_acc, fastq_filelist, fastq_md5list, []
