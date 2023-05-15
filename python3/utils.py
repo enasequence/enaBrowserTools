@@ -532,13 +532,13 @@ def download_report_from_portal(url):
 def get_accession_query(accession):
     query = 'query='
     if is_run(accession):
-        query += 'run_accession="{0}"'.format(accession)
+        query += 'run_accession=%22{0}%22'.format(accession)
     elif is_experiment(accession):
-        query += 'experiment_accession="{0}"'.format(accession)
+        query += 'experiment_accession=%22{0}%22'.format(accession)
     elif is_analysis(accession):
-        query += 'analysis_accession="{0}"'.format(accession)
+        query += 'analysis_accession=%22{0}%22'.format(accession)
     elif is_sample(accession):
-        query += 'sample_accession="{0}"'.format(accession)
+        query += 'sample_accession=%22{0}%22'.format(accession)
     return query
 
 
@@ -620,13 +620,13 @@ def create_dir(dir_path):
 def get_group_query(accession, subtree):
     query = 'query='
     if is_primary_study(accession):
-        query += 'study_accession="{0}"'.format(accession)
+        query += 'study_accession=%22{0}%22'.format(accession)
     elif is_secondary_study(accession):
-        query += 'secondary_study_accession="{0}"'.format(accession)
+        query += 'secondary_study_accession=%22{0}%22'.format(accession)
     elif is_primary_sample(accession):
-        query += 'sample_accession="{0}"'.format(accession)
+        query += 'sample_accession=%22{0}%22'.format(accession)
     elif is_secondary_sample(accession):
-        query += 'secondary_sample_accession="{0}"'.format(accession)
+        query += 'secondary_sample_accession=%22{0}%22'.format(accession)
     elif is_taxid(accession):
         if subtree:
             query += 'tax_tree({0})'.format(accession)
@@ -663,7 +663,7 @@ def get_group_search_query(group, result, accession, subtree):
 
 
 def get_experiment_search_query(run_accession):
-    return PORTAL_SEARCH_BASE + 'query=run_accession="' + run_accession + '"' \
+    return PORTAL_SEARCH_BASE + 'query=run_accession=%22' + run_accession + '%22' \
         + '&result=read_run&fields=experiment_accession&limit=0'
 
 
