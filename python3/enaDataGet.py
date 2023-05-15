@@ -18,7 +18,6 @@
 #
 
 import argparse
-import os
 import sys
 
 import sequenceGet
@@ -27,9 +26,10 @@ import readGet
 import utils
 import traceback
 
+
 def set_parser():
     parser = argparse.ArgumentParser(prog='enaDataGet',
-                                     description = 'Download data for a given accession')
+                                     description='Download data for a given accession')
     parser.add_argument('accession', help="""Sequence, coding, assembly, run, experiment or
                                         analysis accession or WGS prefix (LLLLVV) to download """)
     parser.add_argument('-f', '--format', default=None,
@@ -53,16 +53,18 @@ def set_parser():
     parser.add_argument('-a', '--aspera', action='store_true',
                         help='Use the aspera command line client to download, instead of FTP.')
     parser.add_argument('-as', '--aspera-settings', default=None,
-                    help="""Use the provided settings file, will otherwise check
+                        help="""Use the provided settings file, will otherwise check
                         for environment variable or default settings file location.""")
     parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.5.3')
     return parser
 
+
 def check_availability(accession, output_format):
     if not utils.is_available(accession, output_format):
         sys.stderr.write(
-        'ERROR: Record does not exist or is not available for accession provided\n')
+            'ERROR: Record does not exist or is not available for accession provided\n')
         sys.exit(1)
+
 
 if __name__ == '__main__':
     parser = set_parser()
@@ -117,7 +119,7 @@ if __name__ == '__main__':
         else:
             sys.stderr.write('ERROR: Invalid accession provided\n')
             sys.exit(1)
-        print ('Completed')
+        print('Completed')
     except Exception:
         traceback.print_exc()
         utils.print_error()

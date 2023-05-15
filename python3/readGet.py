@@ -19,11 +19,10 @@
 
 import os
 import sys
-import argparse
-import tempfile
 import urllib.parse as urlparse
 
 import utils
+
 
 def check_read_format(output_format):
     if output_format not in [utils.SUBMITTED_FORMAT, utils.FASTQ_FORMAT, utils.SRA_FORMAT]:
@@ -32,13 +31,15 @@ def check_read_format(output_format):
         )
         sys.exit(1)
 
+
 def check_analysis_format(output_format):
     if output_format != utils.SUBMITTED_FORMAT:
         sys.stderr.write(
             'ERROR: Invalid format. Please select a valid format for this accession: {0}\n'.format(
-            utils.SUBMITTED_FORMAT)
+                utils.SUBMITTED_FORMAT)
         )
         sys.exit(1)
+
 
 def attempt_file_download(file_url, dest_dir, md5, aspera):
     if md5 is not None:
@@ -54,6 +55,7 @@ def attempt_file_download(file_url, dest_dir, md5, aspera):
     file_url = urlparse.quote(file_url)
     return utils.get_ftp_file('ftp://' + file_url, dest_dir)
 
+
 def download_file(file_url, dest_dir, md5, aspera):
     if utils.file_exists(file_url, dest_dir, md5):
         return
@@ -63,8 +65,10 @@ def download_file(file_url, dest_dir, md5, aspera):
     if not success:
         print('Failed to download file after two attempts')
 
+
 def download_meta(accession, dest_dir):
     utils.download_record(dest_dir, accession, utils.XML_FORMAT)
+
 
 def download_experiment_meta(run_accession, dest_dir):
     search_url = utils.get_experiment_search_query(run_accession)
@@ -107,9 +111,9 @@ def download_files(accession, output_format, dest_dir, fetch_index, fetch_meta, 
             download_meta(data_accession, target_dir)
         if len(filelist) == 0:
             if output_format is None:
-                print ('No files available for {0}'.format(data_accession))
+                print('No files available for {0}'.format(data_accession))
             else:
-                print ('No files of format {0} for {1}'.format(output_format, data_accession))
+                print('No files of format {0} for {1}'.format(output_format, data_accession))
             continue
         for i in range(len(filelist)):
             file_url = filelist[i]

@@ -17,7 +17,6 @@
 # limitations under the License.
 #
 
-import base64
 import ftplib
 import hashlib
 import re
@@ -26,17 +25,15 @@ import subprocess
 import sys
 import urllib.request as urlrequest
 import requests
-import xml.etree.ElementTree as ElementTree
 import urllib.error as urlerror
 import urllib.parse as urlparse
 
 from configparser import SafeConfigParser
-from http.client import HTTPSConnection
 
-ASPERA_BIN = 'ascp' # ascp binary
-ASPERA_PRIVATE_KEY = '/path/to/aspera_dsa.openssh' # ascp private key file
-ASPERA_OPTIONS = '' # set any extra aspera options
-ASPERA_SPEED = '100M' # set aspera download speed
+ASPERA_BIN = 'ascp'  # ascp binary
+ASPERA_PRIVATE_KEY = '/path/to/aspera_dsa.openssh'  # ascp private key file
+ASPERA_OPTIONS = ''  # set any extra aspera options
+ASPERA_SPEED = '100M'  # set aspera download speed
 
 SUPPRESSED = 'suppressed'
 PUBLIC = 'public'
@@ -73,12 +70,12 @@ XML_DISPLAY = 'xml/'
 EMBL_DISPLAY = 'embl/'
 FASTA_DISPLAY = 'fasta/'
 
-READ_RESULT_ID='read_run'
-ANALYSIS_RESULT_ID='analysis'
-WGS_RESULT_ID='wgs_set'
-ASSEMBLY_RESULT_ID='assembly'
-SEQUENCE_UPDATE_ID='sequence_update'
-SEQUENCE_RELEASE_ID='sequence_release'
+READ_RESULT_ID = 'read_run'
+ANALYSIS_RESULT_ID = 'analysis'
+WGS_RESULT_ID = 'wgs_set'
+ASSEMBLY_RESULT_ID = 'assembly'
+SEQUENCE_UPDATE_ID = 'sequence_update'
+SEQUENCE_RELEASE_ID = 'sequence_release'
 
 WGS_FTP_BASE = 'ftp://ftp.ebi.ac.uk/pub/databases/ena/wgs'
 WGS_FTP_DIR = 'pub/databases/ena/wgs'
@@ -124,14 +121,18 @@ sample_pattern_3 = re.compile('^[EDS]RS[0-9]{6,}$')
 
 enaBrowserTools_path = os.path.dirname(os.path.dirname(__file__))
 
+
 def is_sequence(accession):
     return sequence_pattern_1.match(accession) or sequence_pattern_2.match(accession)
+
 
 def is_wgs_sequence(accession):
     return wgs_sequence_pattern.match(accession)
 
+
 def is_coding(accession):
     return coding_pattern.match(accession)
+
 
 def is_wgs_set(accession):
     return wgs_prefix_pattern.match(accession) \
@@ -139,40 +140,52 @@ def is_wgs_set(accession):
         or unversion_wgs_prefix_pattern.match(accession) \
         or unversion_wgs_master_pattern.match(accession)
 
+
 def is_unversioned_wgs_set(accession):
     return unversion_wgs_prefix_pattern.match(accession) \
-       or unversion_wgs_master_pattern.match(accession)
+        or unversion_wgs_master_pattern.match(accession)
+
 
 def is_run(accession):
     return run_pattern.match(accession)
 
+
 def is_experiment(accession):
     return experiment_pattern.match(accession)
+
 
 def is_analysis(accession):
     return analysis_pattern.match(accession)
 
+
 def is_assembly(accession):
     return assembly_pattern.match(accession)
 
+
 def is_study(accession):
     return study_pattern_1.match(accession) or study_pattern_2.match(accession)
+
 
 def is_sample(accession):
     return sample_pattern_1.match(accession) or sample_pattern_2.match(accession) \
         or sample_pattern_3.match(accession)
 
+
 def is_primary_study(accession):
     return study_pattern_2.match(accession)
+
 
 def is_secondary_study(accession):
     return study_pattern_1.match(accession)
 
+
 def is_primary_sample(accession):
     return sample_pattern_1.match(accession) or sample_pattern_2.match(accession)
 
+
 def is_secondary_sample(accession):
     return sample_pattern_3.match(accession)
+
 
 def is_taxid(accession):
     try:
@@ -180,6 +193,7 @@ def is_taxid(accession):
         return True
     except ValueError:
         return False
+
 
 def get_accession_type(accession):
     if is_study(accession):
@@ -202,6 +216,7 @@ def get_accession_type(accession):
         return TAXON
     return None
 
+
 def accession_format_allowed(accession, output_format, aspera):
     if is_analysis(accession):
         return output_format == SUBMITTED_FORMAT
@@ -211,6 +226,7 @@ def accession_format_allowed(accession, output_format, aspera):
         else:
             return output_format in [SUBMITTED_FORMAT, FASTQ_FORMAT, SRA_FIELD]
     return output_format in [EMBL_FORMAT, FASTA_FORMAT]
+
 
 def group_format_allowed(group, output_format, aspera):
     if group == ANALYSIS:
@@ -222,6 +238,7 @@ def group_format_allowed(group, output_format, aspera):
             return output_format in [SUBMITTED_FORMAT, FASTQ_FORMAT, SRA_FIELD]
     return output_format in [EMBL_FORMAT, FASTA_FORMAT]
 
+
 # assumption is that accession and format have already been vetted before this method is called
 def get_record_url(accession, output_format):
     if output_format == XML_FORMAT:
@@ -231,6 +248,7 @@ def get_record_url(accession, output_format):
     elif output_format == FASTA_FORMAT:
         return VIEW_URL_BASE + FASTA_DISPLAY + accession
     return None
+
 
 def is_available(accession, output_format):
     if is_taxid(accession):
@@ -247,11 +265,13 @@ def is_available(accession, output_format):
         return response.status_code == 200 and len(response.content) != 0
     except urlerror.URLError as e:
         if 'CERTIFICATE_VERIFY_FAILED' in str(e):
-            print ('Error verifying SSL certificate. Have you run "Install Certificates" as part of your Python3 installation?')
-            print ('This is a commonly missed step in Python3 installation on a Mac.')
-            print ('Please run the following from a terminal window (update to your Python3 version as needed):')
-            print ('open "/Applications/Python 3.6/Install Certificates.command"')
+            print('Error verifying SSL certificate. Have you run "Install Certificates" as part of your Python3 '
+                  'installation?')
+            print('This is a commonly missed step in Python3 installation on a Mac.')
+            print('Please run the following from a terminal window (update to your Python3 version as needed):')
+            print('open "/Applications/Python 3.6/Install Certificates.command"')
         raise
+
 
 def get_filename(base_name, output_format):
     if output_format == XML_FORMAT:
@@ -262,14 +282,17 @@ def get_filename(base_name, output_format):
         return base_name + FASTA_EXT
     return None
 
+
 def get_destination_file(dest_dir, accession, output_format):
     filename = get_filename(accession, output_format)
     if filename is not None:
         return os.path.join(dest_dir, filename)
     return None
 
+
 def download_single_record(url, dest_file):
-        urlrequest.urlretrieve(url, dest_file)
+    urlrequest.urlretrieve(url, dest_file)
+
 
 def download_record(dest_dir, accession, output_format, expanded=False):
     try:
@@ -282,8 +305,9 @@ def download_record(dest_dir, accession, output_format, expanded=False):
         download_single_record(url, dest_file)
         return True
     except Exception as e:
-        print ("Error downloading read record: {0}".format(e))
+        print("Error downloading read record: {0}".format(e))
         return False
+
 
 def write_record(url, dest_file):
     try:
@@ -299,6 +323,7 @@ def write_record(url, dest_file):
     except Exception:
         return False
 
+
 def get_ftp_file(ftp_url, dest_dir):
     try:
         filename = urlparse.unquote(ftp_url.split('/')[-1])
@@ -309,6 +334,7 @@ def get_ftp_file(ftp_url, dest_dir):
         sys.stderr.write("Error with FTP transfer: {0}".format(e))
         sys.stderr.write("Error with FTP transfer occurred for file: {}".format(filename))
         return False
+
 
 def get_aspera_file(aspera_url, dest_dir):
     try:
@@ -321,6 +347,7 @@ def get_aspera_file(aspera_url, dest_dir):
         sys.stderr.write("Error with FTP transfer occurred for file: {}".format(filename))
         return False
 
+
 def get_md5(filepath):
     hash_md5 = hashlib.md5()
     with open(filepath, 'rb') as f:
@@ -328,15 +355,17 @@ def get_md5(filepath):
             hash_md5.update(chunk)
     return hash_md5.hexdigest()
 
+
 def check_md5(filepath, expected_md5):
     generated_md5 = get_md5(filepath)
     if expected_md5 != generated_md5:
-        print ('MD5 mismatch for downloaded file ' + filepath + '. Deleting file')
-        print ('generated md5', generated_md5)
-        print ('expected md5', expected_md5)
+        print('MD5 mismatch for downloaded file ' + filepath + '. Deleting file')
+        print('generated md5', generated_md5)
+        print('expected md5', expected_md5)
         os.remove(filepath)
         return False
     return True
+
 
 def file_exists(file_url, dest_dir, md5):
     filename = urlparse.unquote(file_url.split('/')[-1])
@@ -348,6 +377,7 @@ def file_exists(file_url, dest_dir, md5):
             return True
     return False
 
+
 def get_ftp_file_with_md5_check(ftp_url, dest_dir, md5):
     try:
         filename = urlparse.unquote(ftp_url.split('/')[-1])
@@ -358,6 +388,7 @@ def get_ftp_file_with_md5_check(ftp_url, dest_dir, md5):
         sys.stderr.write("Error with FTP transfer: {0}\n".format(e))
         sys.stderr.write("Error with FTP transfer occurred for file: {}".format(filename))
         return False
+
 
 def get_aspera_file_with_md5_check(aspera_url, dest_dir, md5):
     try:
@@ -372,24 +403,26 @@ def get_aspera_file_with_md5_check(aspera_url, dest_dir, md5):
         sys.stderr.write("Error with Aspera transfer occurred for file: {}".format(filename))
         return False
 
+
 def set_aspera_variables(filepath):
     try:
         parser = SafeConfigParser()
         parser.read(filepath)
-        # set and check binary location
+        #  set and check binary location
         global ASPERA_BIN
         ASPERA_BIN = parser.get('aspera', 'ASPERA_BIN')
         if not os.path.exists(ASPERA_BIN):
-            print ('Aspera binary ({0}) does not exist. Defaulting to FTP transfer'.format(ASPERA_BIN))
+            print('Aspera binary ({0}) does not exist. Defaulting to FTP transfer'.format(ASPERA_BIN))
             return False
         if not os.access(ASPERA_BIN, os.X_OK):
-            print ('You do not have permissions to execute the aspera binary ({0}). Defaulting to FTP transfer'.format(ASPERA_BIN))
+            print('You do not have permissions to execute the aspera binary ({0}). Defaulting to FTP transfer'.format(
+                ASPERA_BIN))
             return False
         # set and check private key location
         global ASPERA_PRIVATE_KEY
         ASPERA_PRIVATE_KEY = parser.get('aspera', 'ASPERA_PRIVATE_KEY')
         if not os.path.exists(ASPERA_PRIVATE_KEY):
-            print ('Private key file ({0}) does not exist. Defaulting to FTP transfer'.format(ASPERA_PRIVATE_KEY))
+            print('Private key file ({0}) does not exist. Defaulting to FTP transfer'.format(ASPERA_PRIVATE_KEY))
             return False
         # set non-file variables
         global ASPERA_SPEED
@@ -401,6 +434,7 @@ def set_aspera_variables(filepath):
         sys.stderr.write("ERROR: cannot read aspera settings from {0}.\n".format(filepath))
         sys.stderr.write("{0}\n".format(e))
         sys.exit(1)
+
 
 def set_aspera(aspera_filepath):
     aspera = True
@@ -420,13 +454,14 @@ def set_aspera(aspera_filepath):
             aspera = False
     return aspera
 
+
 def asperaretrieve(url, dest_dir, dest_file):
     try:
-        logdir=os.path.abspath(os.path.join(dest_dir, "logs"))
-        print ('Creating', logdir)
+        logdir = os.path.abspath(os.path.join(dest_dir, "logs"))
+        print('Creating', logdir)
         create_dir(logdir)
-        aspera_line="{bin} -QT -L {logs} -l {speed} -P33001 {aspera} -i {key} era-fasp@{file} {outdir}"
-        aspera_line=aspera_line.format(
+        aspera_line = "{bin} -QT -L {logs} -l {speed} -P33001 {aspera} -i {key} era-fasp@{file} {outdir}"
+        aspera_line = aspera_line.format(
             bin=ASPERA_BIN,
             outdir=dest_dir,
             logs=logdir,
@@ -436,11 +471,12 @@ def asperaretrieve(url, dest_dir, dest_file):
             speed=ASPERA_SPEED,
         )
         print(aspera_line)
-        subprocess.call(aspera_line, shell=True) # this blocks so we're fine to wait and return True
+        subprocess.call(aspera_line, shell=True)  # this blocks so we're fine to wait and return True
         return True
     except Exception as e:
         sys.stderr.write("Error with Aspera transfer: {0}\n".format(e))
         return False
+
 
 def get_wgs_file_ext(output_format):
     if output_format == EMBL_FORMAT:
@@ -450,9 +486,11 @@ def get_wgs_file_ext(output_format):
     elif output_format == MASTER_FORMAT:
         return WGS_MASTER_EXT
 
+
 def get_wgs_ftp_url(wgs_set, status, output_format):
     base_url = WGS_FTP_BASE + '/' + status + '/' + wgs_set[:3].lower() + '/' + wgs_set
     return base_url + get_wgs_file_ext(output_format)
+
 
 def get_nonversioned_wgs_ftp_url(wgs_set, status, output_format):
     ftp_url = 'ftp.ebi.ac.uk'
@@ -469,6 +507,7 @@ def get_nonversioned_wgs_ftp_url(wgs_set, status, output_format):
     else:
         return base_url + '/' + max(files)
 
+
 def get_report_from_portal(url):
     request = urlrequest.Request(url)
     response = urlrequest.urlopen(request)
@@ -483,12 +522,14 @@ def get_report_from_portal(url):
         sys.stderr.write('ERROR: Unable to fetch data from url: ' + url + '\n')
         sys.exit(1)
 
+
 def download_report_from_portal(url):
     response = get_report_from_portal(url)
     lines = []
     for line in response:
         lines.append(line.decode('utf-8'))
     return lines
+
 
 def get_accession_query(accession):
     query = 'query='
@@ -502,6 +543,7 @@ def get_accession_query(accession):
         query += 'sample_accession="{0}"'.format(accession)
     return query
 
+
 def get_ftp_file_fields(accession):
     fields = 'fields='
     fields += SUBMITTED_FIELD + ',' + SUBMITTED_MD5_FIELD
@@ -511,6 +553,7 @@ def get_ftp_file_fields(accession):
     fields += ',' + SRA_FIELD + ',' + SRA_MD5_FIELD
     fields += ',' + FASTQ_FIELD + ',' + FASTQ_MD5_FIELD
     return fields
+
 
 def get_aspera_file_fields(accession):
     fields = 'fields='
@@ -522,11 +565,13 @@ def get_aspera_file_fields(accession):
     fields += ',' + FASTQ_ASPERA_FIELD + ',' + FASTQ_MD5_FIELD
     return fields
 
+
 def get_file_fields(accession, aspera):
     if aspera:
         return get_aspera_file_fields(accession)
     else:
         return get_ftp_file_fields(accession)
+
 
 def get_result(accession):
     if is_run(accession) or is_experiment(accession) or is_sample(accession):
@@ -534,15 +579,18 @@ def get_result(accession):
     else:  # is_analysis(accession)
         return ANALYSIS_RESULT
 
+
 def get_file_search_query(accession, aspera):
     return PORTAL_SEARCH_BASE + get_accession_query(accession) + '&' + \
         get_result(accession) + '&' + \
         get_file_fields(accession, aspera) + '&limit=0'
 
+
 def split_filelist(filelist_string):
     if filelist_string.strip() == '':
         return []
     return filelist_string.strip().split(';')
+
 
 def parse_file_search_result_line(line, accession, output_format):
     cols = line.split('\t')
@@ -568,12 +616,14 @@ def parse_file_search_result_line(line, accession, output_format):
         return data_acc, sra_filelist, sra_md5list, []
     return data_acc, fastq_filelist, fastq_md5list, []
 
+
 def create_dir(dir_path):
     if not os.path.exists(dir_path):
         os.makedirs(dir_path)
 
+
 def get_group_query(accession, subtree):
-    query='query='
+    query = 'query='
     if is_primary_study(accession):
         query += 'study_accession="{0}"'.format(accession)
     elif is_secondary_study(accession):
@@ -589,6 +639,7 @@ def get_group_query(accession, subtree):
             query += 'tax_eq({0})'.format(accession)
     return query
 
+
 def get_group_fields(group):
     fields = 'fields='
     if group in [SEQUENCE, WGS, ASSEMBLY]:
@@ -598,6 +649,7 @@ def get_group_fields(group):
     elif group == ANALYSIS:
         fields += 'analysis_accession'
     return fields
+
 
 def get_group_result(group):
     if group == READ:
@@ -609,13 +661,16 @@ def get_group_result(group):
     elif group == ASSEMBLY:
         return ASSEMBLY_RESULT
 
+
 def get_group_search_query(group, result, accession, subtree):
     return PORTAL_SEARCH_BASE + get_group_query(accession, subtree) + '&' \
         + result + '&' + get_group_fields(group) + '&limit=0'
 
+
 def get_experiment_search_query(run_accession):
     return PORTAL_SEARCH_BASE + 'query=run_accession="' + run_accession + '"' \
         + '&result=read_run&fields=experiment_accession&limit=0'
+
 
 def is_empty_dir(target_dir):
     for dirpath, dirnames, files in os.walk(target_dir):
@@ -623,9 +678,12 @@ def is_empty_dir(target_dir):
             return False
     return True
 
+
 def print_error():
     sys.stderr.write('ERROR: Something unexpected went wrong please try again.\n')
-    sys.stderr.write('If problem persists, please contact ENA (https://www.ebi.ac.uk/ena/browser/support) for assistance, with the above error details.\n')
+    sys.stderr.write('If problem persists, please contact ENA (https://www.ebi.ac.uk/ena/browser/support) for '
+                     'assistance, with the above error details.\n')
+
 
 def get_divisor(record_cnt):
     if record_cnt <= 10000:
@@ -634,6 +692,7 @@ def get_divisor(record_cnt):
         return 5000
     return 10000
 
+
 def record_start_line(line, output_format):
     if output_format == FASTA_FORMAT:
         return line.startswith(b'>')
@@ -641,6 +700,7 @@ def record_start_line(line, output_format):
         return line.startswith(b'ID  ')
     else:
         return False
+
 
 def extract_acc_from_line(line, output_format):
     if output_format == FASTA_FORMAT:

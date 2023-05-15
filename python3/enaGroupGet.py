@@ -28,9 +28,10 @@ import utils
 import traceback
 import time
 
+
 def set_parser():
     parser = argparse.ArgumentParser(prog='enaGroupGet',
-                                     description = 'Download data for a given study or sample, or (for sequence and assembly) taxon')
+                                     description='Download data for a given study or sample, or (for sequence and assembly) taxon')
     parser.add_argument('accession', help='Study or sample accession or NCBI tax ID to fetch data for')
     parser.add_argument('-g', '--group', default='read',
                         choices=['sequence', 'wgs', 'assembly', 'read', 'analysis'],
@@ -56,12 +57,13 @@ def set_parser():
     parser.add_argument('-a', '--aspera', action='store_true',
                         help='Use the aspera command line client to download, instead of FTP.')
     parser.add_argument('-as', '--aspera-settings', default=None,
-                    help="""Use the provided settings file, will otherwise check
+                        help="""Use the provided settings file, will otherwise check
                         for environment variable or default settings file location.""")
     parser.add_argument('-t', '--subtree', action='store_true',
                         help='Include subordinate taxa (taxon subtree) when querying with NCBI tax ID (default is false)')
     parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.5.3')
     return parser
+
 
 def download_report(group, result, accession, temp_file, subtree):
     search_url = utils.get_group_search_query(group, result, accession, subtree)
@@ -74,14 +76,15 @@ def download_report(group, result, accession, temp_file, subtree):
 
 def download_data(group, data_accession, output_format, group_dir, fetch_wgs, extract_wgs, expanded, fetch_meta, fetch_index, aspera):
     if group == utils.WGS:
-        print ('Fetching ' + data_accession[:6])
+        print('Fetching ' + data_accession[:6])
         sequenceGet.download_wgs(group_dir, data_accession[:6], output_format)
     else:
-        print ('Fetching ' + data_accession)
+        print('Fetching ' + data_accession)
         if group == utils.ASSEMBLY:
-            assemblyGet.download_assembly(group_dir, data_accession, output_format, fetch_wgs, extract_wgs, expanded, True)
+            assemblyGet.download_assembly(group_dir, data_accession, output_format, fetch_wgs, extract_wgs, expanded,
+                                          True)
         elif group in [utils.READ, utils.ANALYSIS]:
-            readGet.download_files(data_accession, output_format, group_dir, fetch_index, fetch_meta, aspera)
+            readGet.download_files(data_accession, output_format, group_dir, fetch_meta, aspera)
 
 def download_data_group(group, accession, output_format, group_dir, fetch_wgs, extract_wgs, fetch_meta, fetch_index, aspera, subtree, expanded):
     temp_file_path = os.path.join(group_dir, accession + '_temp.txt')
@@ -95,6 +98,7 @@ def download_data_group(group, accession, output_format, group_dir, fetch_wgs, e
             data_accession = line.strip()
             download_data(group, data_accession, output_format, group_dir, fetch_wgs, extract_wgs, expanded, fetch_meta, fetch_index, aspera)
     os.remove(temp_file_path)
+
 
 def download_sequence_result(dest_file, group_dir, result, accession, subtree, update_accs, expanded):
     ts = time.time()
@@ -120,15 +124,18 @@ def download_sequence_result(dest_file, group_dir, result, accession, subtree, u
     os.remove(temp_file_path)
     return update_accs
 
+
 def download_sequence_group(accession, output_format, group_dir, subtree, expanded):
-    print ('Downloading sequences')
+    print('Downloading sequences')
     update_accs = []
     dest_file_path = os.path.join(group_dir, utils.get_filename(accession + '_sequences', output_format))
     dest_file = open(dest_file_path, 'wb')
-    #sequence update
-    update_accs = download_sequence_result(dest_file, group_dir, utils.SEQUENCE_UPDATE_RESULT, accession, subtree, update_accs, expanded)
-    #sequence release
-    update_accs = download_sequence_result(dest_file, group_dir, utils.SEQUENCE_RELEASE_RESULT, accession, subtree, update_accs, expanded)
+    # sequence update
+    update_accs = download_sequence_result(dest_file, group_dir, utils.SEQUENCE_UPDATE_RESULT, accession, subtree,
+                                           update_accs, expanded)
+    # sequence release
+    update_accs = download_sequence_result(dest_file, group_dir, utils.SEQUENCE_RELEASE_RESULT, accession, subtree,
+                                           update_accs, expanded)
     dest_file.close()
 
 def download_group(accession, group, output_format, dest_dir, fetch_wgs, extract_wgs, fetch_meta, fetch_index, aspera, subtree, expanded):
@@ -166,7 +173,7 @@ if __name__ == '__main__':
 
     if not utils.is_study(accession) and not utils.is_sample(accession) and not utils.is_taxid(accession):
         sys.stderr.write(
-         'ERROR: Invalid accession. Only sample and study/project accessions or NCBI tax ID supported\n'
+            'ERROR: Invalid accession. Only sample and study/project accessions or NCBI tax ID supported\n'
         )
         sys.exit(1)
 
@@ -187,8 +194,9 @@ if __name__ == '__main__':
         if utils.is_taxid(accession) and group in ['read', 'analysis']:
             print('Sorry, tax ID retrieval not yet supported for read and analysis')
             sys.exit(1)
-        download_group(accession, group, output_format, dest_dir, fetch_wgs, extract_wgs, fetch_meta, fetch_index, aspera, subtree, expanded)
-        print ('Completed')
+        download_group(accession, group, output_format, dest_dir, fetch_wgs, extract_wgs, fetch_meta, fetch_index,
+                       aspera, subtree, expanded)
+        print('Completed')
     except Exception:
         traceback.print_exc()
         utils.print_error()
