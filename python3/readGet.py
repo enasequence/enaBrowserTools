@@ -19,11 +19,10 @@
 
 import os
 import sys
-import argparse
-import tempfile
 import urllib.parse as urlparse
 
 import utils
+
 
 def check_read_format(output_format):
     if output_format not in [utils.SUBMITTED_FORMAT, utils.FASTQ_FORMAT, utils.SRA_FORMAT]:
@@ -32,13 +31,15 @@ def check_read_format(output_format):
         )
         sys.exit(1)
 
+
 def check_analysis_format(output_format):
     if output_format != utils.SUBMITTED_FORMAT:
         sys.stderr.write(
             'ERROR: Invalid format. Please select a valid format for this accession: {0}\n'.format(
-            utils.SUBMITTED_FORMAT)
+                utils.SUBMITTED_FORMAT)
         )
         sys.exit(1)
+
 
 def attempt_file_download(file_url, dest_dir, md5, aspera):
     if md5 is not None:
@@ -54,6 +55,7 @@ def attempt_file_download(file_url, dest_dir, md5, aspera):
     file_url = urlparse.quote(file_url)
     return utils.get_ftp_file('ftp://' + file_url, dest_dir)
 
+
 def download_file(file_url, dest_dir, md5, aspera):
     if utils.file_exists(file_url, dest_dir, md5):
         return
@@ -63,8 +65,10 @@ def download_file(file_url, dest_dir, md5, aspera):
     if not success:
         print('Failed to download file after two attempts')
 
+
 def download_meta(accession, dest_dir):
     utils.download_record(dest_dir, accession, utils.XML_FORMAT)
+
 
 def download_experiment_meta(run_accession, dest_dir):
     search_url = utils.get_experiment_search_query(run_accession)
@@ -78,7 +82,8 @@ def download_experiment_meta(run_accession, dest_dir):
         break
     download_meta(experiment_accession, dest_dir)
 
-def download_files(accession, output_format, dest_dir, fetch_index, fetch_meta, aspera):
+
+def download_files(accession, output_format, dest_dir, fetch_meta, aspera):
     accession_dir = os.path.join(dest_dir, accession)
     utils.create_dir(accession_dir)
     # download experiment xml
@@ -93,7 +98,7 @@ def download_files(accession, output_format, dest_dir, fetch_index, fetch_meta, 
     lines = utils.download_report_from_portal(search_url)
 
     for line in lines[1:]:
-        data_accession, filelist, md5list, indexlist = utils.parse_file_search_result_line(
+        data_accession, filelist, md5list = utils.parse_file_search_result_line(
             line, accession, output_format)
         # create run directory if downloading all data for an experiment
         if is_experiment:
@@ -107,18 +112,15 @@ def download_files(accession, output_format, dest_dir, fetch_index, fetch_meta, 
             download_meta(data_accession, target_dir)
         if len(filelist) == 0:
             if output_format is None:
-                print ('No files available for {0}'.format(data_accession))
+                print('No files available for {0}'.format(data_accession))
             else:
-                print ('No files of format {0} for {1}'.format(output_format, data_accession))
+                print('No files of format {0} for {1}'.format(output_format, data_accession))
             continue
         for i in range(len(filelist)):
             file_url = filelist[i]
             md5 = md5list[i]
             if file_url != '':
                 download_file(file_url, target_dir, md5, aspera)
-        for index_file in indexlist:
-            if index_file != '':
-                download_file(index_file, target_dir, None, aspera)
     if utils.is_empty_dir(target_dir):
         print('Deleting directory ' + os.path.basename(target_dir))
         os.rmdir(target_dir)
