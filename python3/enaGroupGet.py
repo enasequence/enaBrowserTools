@@ -58,7 +58,7 @@ def set_parser():
                         for environment variable or default settings file location.""")
     parser.add_argument('-t', '--subtree', action='store_true',
                         help='Include subordinate taxa (taxon subtree) when querying with NCBI tax ID (default is false)')
-    parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.5.4')
+    parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.7.0')
     return parser
 
 
