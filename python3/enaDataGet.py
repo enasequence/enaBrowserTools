@@ -52,7 +52,7 @@ def set_parser():
     parser.add_argument('-as', '--aspera-settings', default=None,
                         help="""Use the provided settings file, will otherwise check
                         for environment variable or default settings file location.""")
-    parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.5.4')
+    parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.7.0')
     return parser
 
 
