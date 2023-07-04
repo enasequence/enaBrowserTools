@@ -38,7 +38,7 @@ import java.net.URL;
 public class PortalApiClient {
 
     static final String URL = "https://www.ebi.ac.uk/ena/portal/api/search?result=%s&fields=accession," +
-            "last_updated&sortFields=accession&limit=0";
+            "last_updated&limit=0";
 
     @SneakyThrows
     public File getLatestSnapshot(DataType dataType, File outputFile, String query) {

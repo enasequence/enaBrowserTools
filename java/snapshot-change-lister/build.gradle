@@ -20,7 +20,7 @@ plugins {
 }
 
 group = 'uk.ac.ebi.ena.dcap'
-version = '1.1.0'
+version = '1.2.0'
 sourceCompatibility = '1.8'
 
 configurations {
@@ -55,3 +55,18 @@ bootRun {
     }
 }
 
+test {
+    exclude '**/SnapshotChangeListerApplicationTests.class'
+}
+
+jar {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+    manifest {
+        attributes "Main-Class": "uk.ac.ebi.ena.dcap.scl.SnapshotChangeListerApplication"
+    }
+
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}
