@@ -590,15 +590,15 @@ def split_filelist(filelist_string):
 
 def parse_file_search_result_line(line, accession, output_format):
     cols = line.split('\t')
-    data_acc = cols[0].strip()
-    sub_filelist = split_filelist(cols[1])
-    sub_md5list = split_filelist(cols[2])
+    data_acc = cols[-1].strip()
+    sub_filelist = split_filelist(cols[0])
+    sub_md5list = split_filelist(cols[1])
     if is_analysis(accession):
         return data_acc, sub_filelist, sub_md5list
-    sra_filelist = split_filelist(cols[3])
-    sra_md5list = split_filelist(cols[4])
-    fastq_filelist = split_filelist(cols[5])
-    fastq_md5list = split_filelist(cols[6])
+    sra_filelist = split_filelist(cols[2])
+    sra_md5list = split_filelist(cols[3])
+    fastq_filelist = split_filelist(cols[4])
+    fastq_md5list = split_filelist(cols[5])
     if output_format is None:
         if len(sub_filelist) > 0:
             output_format = SUBMITTED_FORMAT
