@@ -590,6 +590,15 @@ def split_filelist(filelist_string):
 
 def parse_file_search_result_line(line, accession, output_format):
     cols = line.split('\t')
+    # example:
+    # submitted_ftp submitted_md5 sra_ftp sra_md5 fastq_ftp fastq_md5 run_accession
+    # ftp.sra.ebi.ac.uk/vol1/run/ERR251/ERR2512031/20104421_S5_L999_R1_001.fastq.gz;ftp.sra.ebi.ac.uk/vol1/run/ERR251/ERR2512031/20104421_S5_L999_R2_001.fastq.gz
+    # 5267a0aa15395983b08318af330bfe47;e351cea6ed9d2f45f2d5fc01238789e5
+    # ftp.sra.ebi.ac.uk/vol1/err/ERR251/001/ERR2512031
+    # 1cf4167dfebec580f3a9f8927c546cc7
+    # ftp.sra.ebi.ac.uk/vol1/fastq/ERR251/001/ERR2512031/ERR2512031_1.fastq.gz;ftp.sra.ebi.ac.uk/vol1/fastq/ERR251/001/ERR2512031/ERR2512031_2.fastq.gz
+    # 950123b5264f6483040901575a8e8383;8bb209553d1c0292593524813cffb67f
+    # ERR2512031
     data_acc = cols[-1].strip()
     sub_filelist = split_filelist(cols[0])
     sub_md5list = split_filelist(cols[1])
