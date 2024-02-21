@@ -97,9 +97,9 @@ def download_files(accession, output_format, dest_dir, fetch_meta, aspera):
 
     lines = utils.download_report_from_portal(search_url)
 
-    for line in lines[1:]:
+    for line in lines:
         data_accession, filelist, md5list = utils.parse_file_search_result_line(
-            line, accession, output_format)
+            line, accession, output_format, aspera)
         # create run directory if downloading all data for an experiment
         if is_experiment:
             run_dir = os.path.join(accession_dir, data_accession)
