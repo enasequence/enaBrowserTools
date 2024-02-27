@@ -27,6 +27,7 @@ import urllib.request as urlrequest
 import requests
 import urllib.error as urlerror
 import urllib.parse as urlparse
+import json
 
 from configparser import SafeConfigParser
 
@@ -523,10 +524,7 @@ def get_report_from_portal(url):
 
 def download_report_from_portal(url):
     response = get_report_from_portal(url)
-    lines = []
-    for line in response:
-        lines.append(line.decode('utf-8'))
-    return lines
+    return json.loads(response.read().decode('utf-8'))
 
 
 def get_accession_query(accession):
@@ -572,14 +570,28 @@ def get_file_fields(accession, aspera):
 def get_result(accession):
     if is_run(accession) or is_experiment(accession) or is_sample(accession):
         return RUN_RESULT
-    else:  # is_analysis(accession)
+    elif is_analysis(accession):
         return ANALYSIS_RESULT
+    else:
+        raise TypeError('Only runs, experiments, samples and analyses are allowed')
 
+def get_result_accession(accession):
+    if is_run(accession) or is_experiment(accession) or is_sample(accession):
+        return 'run_accession'
+    elif is_analysis(accession):
+        return 'analysis_accession'
+    else:
+        raise TypeError('Only runs, experiments, samples and analyses are allowed')
 
 def get_file_search_query(accession, aspera):
-    return PORTAL_SEARCH_BASE + get_accession_query(accession) + '&' + \
-        get_result(accession) + '&' + \
-        get_file_fields(accession, aspera) + '&limit=0'
+    try:
+        result = get_result(accession)
+    except TypeError as e:
+        print("Error:", e)
+        raise RuntimeError("Failed to get result for accession: {}".format(accession)) from e
+
+    return PORTAL_SEARCH_BASE + get_accession_query(accession) + '&' + result + '&' + \
+        get_file_fields(accession, aspera) + '&format=json&limit=0'
 
 
 def split_filelist(filelist_string):
@@ -588,17 +600,39 @@ def split_filelist(filelist_string):
     return filelist_string.strip().split(';')
 
 
-def parse_file_search_result_line(line, accession, output_format):
-    cols = line.split('\t')
-    data_acc = cols[0].strip()
-    sub_filelist = split_filelist(cols[1])
-    sub_md5list = split_filelist(cols[2])
+def parse_file_search_result_line(item, accession, output_format, aspera):
+    # example:
+    # submitted_ftp submitted_md5 sra_ftp sra_md5 fastq_ftp fastq_md5 run_accession
+    # ftp.sra.ebi.ac.uk/vol1/run/ERR251/ERR2512031/20104421_S5_L999_R1_001.fastq.gz;ftp.sra.ebi.ac.uk/vol1/run/ERR251/ERR2512031/20104421_S5_L999_R2_001.fastq.gz
+    # 5267a0aa15395983b08318af330bfe47;e351cea6ed9d2f45f2d5fc01238789e5
+    # ftp.sra.ebi.ac.uk/vol1/err/ERR251/001/ERR2512031
+    # 1cf4167dfebec580f3a9f8927c546cc7
+    # ftp.sra.ebi.ac.uk/vol1/fastq/ERR251/001/ERR2512031/ERR2512031_1.fastq.gz;ftp.sra.ebi.ac.uk/vol1/fastq/ERR251/001/ERR2512031/ERR2512031_2.fastq.gz
+    # 950123b5264f6483040901575a8e8383;8bb209553d1c0292593524813cffb67f
+    # ERR2512031
+    try:
+        result_accession = get_result_accession(accession)
+    except TypeError as e:
+        print("Error:", e)
+        raise RuntimeError("Failed to get result for accession: {}".format(accession)) from e
+
+    data_acc = item[result_accession]
+
+    if aspera:
+        sub_filelist = split_filelist(item[SUBMITTED_ASPERA_FIELD])
+        sra_filelist = split_filelist(item[SRA_ASPERA_FIELD])
+        fastq_filelist = split_filelist(item[FASTQ_ASPERA_FIELD])
+    else:
+        sub_filelist = split_filelist(item[SUBMITTED_FIELD])
+        sra_filelist = split_filelist(item[SRA_FIELD])
+        fastq_filelist = split_filelist(item[FASTQ_FIELD])
+
+    sub_md5list = split_filelist(item[SUBMITTED_MD5_FIELD])
+    sra_md5list = split_filelist(item[SRA_MD5_FIELD])
+    fastq_md5list = split_filelist(item[FASTQ_MD5_FIELD])
+
     if is_analysis(accession):
         return data_acc, sub_filelist, sub_md5list
-    sra_filelist = split_filelist(cols[3])
-    sra_md5list = split_filelist(cols[4])
-    fastq_filelist = split_filelist(cols[5])
-    fastq_md5list = split_filelist(cols[6])
     if output_format is None:
         if len(sub_filelist) > 0:
             output_format = SUBMITTED_FORMAT
@@ -608,9 +642,10 @@ def parse_file_search_result_line(line, accession, output_format):
             output_format = FASTQ_FORMAT
     if output_format == SUBMITTED_FORMAT:
         return data_acc, sub_filelist, sub_md5list
-    if output_format == SRA_FORMAT:
+    elif output_format == SRA_FORMAT:
         return data_acc, sra_filelist, sra_md5list
-    return data_acc, fastq_filelist, fastq_md5list
+    else:
+        return data_acc, fastq_filelist, fastq_md5list
 
 
 def create_dir(dir_path):
