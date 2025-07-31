@@ -746,7 +746,7 @@ def print_certificate_failed_error(e):
             "Error verifying SSL certificate. Have you run \"Install Certificates\" as part of your Python3 installation?\n"
             "This is a commonly missed step in Python3 installation on a Mac.\n"
             "Please run the following from a terminal window (update to your Python3 version as needed):\n"
-            "open \"/Applications/Python 3.6/Install Certificates.command\"\n"
+            "open \"/Applications/Python 3.13/Install Certificates.command\"\n"
         )
         sys.exit(1)
     else:
