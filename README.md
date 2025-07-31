@@ -22,7 +22,7 @@ Note that EBI now uses HTTPS servers. This can create a problem when using Pytho
 installation step. Please run the "Install Certificates.command" command to ensure your Python 3 installation on
 the Mac can correctly authenticate against the servers. To do this, run the following from a terminal window, updating
 the Python version with the correct version of Python 3 that you have installed:
-open "/Applications/Python 3.6/Install Certificates.command"
+open "/Applications/Python 3.13/Install Certificates.command"
 
 We have had a report from a user than when Python 3 was installed using homebrew, the following code needed to be run instead:
 ```
