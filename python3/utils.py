@@ -29,7 +29,7 @@ import urllib.error as urlerror
 import urllib.parse as urlparse
 import json
 
-from configparser import SafeConfigParser
+from configparser import ConfigParser
 
 ASPERA_BIN = 'ascp'  # ascp binary
 ASPERA_PRIVATE_KEY = '/path/to/aspera_dsa.openssh'  # ascp private key file
@@ -100,23 +100,23 @@ FASTQ_ASPERA_FIELD = 'fastq_aspera'
 SUBMITTED_ASPERA_FIELD = 'submitted_aspera'
 SRA_ASPERA_FIELD = 'sra_aspera'
 
-sequence_pattern_1 = re.compile('^[A-Z]{1}[0-9]{5}(\.[0-9]+)?$')
-sequence_pattern_2 = re.compile('^[A-Z]{2}[0-9]{6}(\.[0-9]+)?$')
-wgs_sequence_pattern = re.compile('^[A-Z]{4}[0-9]{8,9}(\.[0-9]+)?$')
-coding_pattern = re.compile('^[A-Z]{3}[0-9]{5}(\.[0-9]+)?$')
-wgs_prefix_pattern = re.compile('^([A-Z]{4}|[A-Z]{6})[0-9]{2}$')
-wgs_master_pattern = re.compile('^([A-Z]{4}|[A-Z]{6})[0-9]{2}[0]{6,9}$')
-unversion_wgs_prefix_pattern = re.compile('^([A-Z]{4}|[A-Z]{6})$')
-unversion_wgs_master_pattern = re.compile('^([A-Z]{4}|[A-Z]{6})[0]{8,11}$')
-run_pattern = re.compile('^[EDS]RR[0-9]{6,}$')
-experiment_pattern = re.compile('^[EDS]RX[0-9]{6,}$')
-analysis_pattern = re.compile('^[EDS]RZ[0-9]{6,}$')
-assembly_pattern = re.compile('^GCA_[0-9]{9}(\.[0-9]+)?$')
-study_pattern_1 = re.compile('^[EDS]RP[0-9]{6,}$')
-study_pattern_2 = re.compile('^PRJ[EDN][AB][0-9]+$')
-sample_pattern_1 = re.compile('^SAM[ND][0-9]{8}$')
-sample_pattern_2 = re.compile('^SAMEA[0-9]{6,}$')
-sample_pattern_3 = re.compile('^[EDS]RS[0-9]{6,}$')
+sequence_pattern_1 = re.compile(r'^[A-Z]{1}[0-9]{5}(.[0-9]+)?$')
+sequence_pattern_2 = re.compile(r'^[A-Z]{2}[0-9]{6}(.[0-9]+)?$')
+wgs_sequence_pattern = re.compile(r'^[A-Z]{4}[0-9]{8,9}(.[0-9]+)?$')
+coding_pattern = re.compile(r'^[A-Z]{3}[0-9]{5}(.[0-9]+)?$')
+wgs_prefix_pattern = re.compile(r'^([A-Z]{4}|[A-Z]{6})[0-9]{2}$')
+wgs_master_pattern = re.compile(r'^([A-Z]{4}|[A-Z]{6})[0-9]{2}[0]{6,9}$')
+unversion_wgs_prefix_pattern = re.compile(r'^([A-Z]{4}|[A-Z]{6})$')
+unversion_wgs_master_pattern = re.compile(r'^([A-Z]{4}|[A-Z]{6})[0]{8,11}$')
+run_pattern = re.compile(r'^[EDS]RR[0-9]{6,}$')
+experiment_pattern = re.compile(r'^[EDS]RX[0-9]{6,}$')
+analysis_pattern = re.compile(r'^[EDS]RZ[0-9]{6,}$')
+assembly_pattern = re.compile(r'^GCA_[0-9]{9}(.[0-9]+)?$')
+study_pattern_1 = re.compile(r'^[EDS]RP[0-9]{6,}$')
+study_pattern_2 = re.compile(r'^PRJ[EDN][AB][0-9]+$')
+sample_pattern_1 = re.compile(r'^SAM[ND][0-9]{8}$')
+sample_pattern_2 = re.compile(r'^SAMEA[0-9]{6,}$')
+sample_pattern_3 = re.compile(r'^[EDS]RS[0-9]{6,}$')
 
 enaBrowserTools_path = os.path.dirname(os.path.dirname(__file__))
 
@@ -263,12 +263,8 @@ def is_available(accession, output_format):
         response = requests.get(url)
         return response.status_code == 200 and len(response.content) != 0
     except urlerror.URLError as e:
-        if 'CERTIFICATE_VERIFY_FAILED' in str(e):
-            print('Error verifying SSL certificate. Have you run "Install Certificates" as part of your Python3 '
-                  'installation?')
-            print('This is a commonly missed step in Python3 installation on a Mac.')
-            print('Please run the following from a terminal window (update to your Python3 version as needed):')
-            print('open "/Applications/Python 3.6/Install Certificates.command"')
+        print_certificate_failed_error(e)
+    except Exception as e:
         raise
 
 
@@ -405,7 +401,7 @@ def get_aspera_file_with_md5_check(aspera_url, dest_dir, md5):
 
 def set_aspera_variables(filepath):
     try:
-        parser = SafeConfigParser()
+        parser = ConfigParser()
         parser.read(filepath)
         #  set and check binary location
         global ASPERA_BIN
@@ -508,18 +504,21 @@ def get_nonversioned_wgs_ftp_url(wgs_set, status, output_format):
 
 
 def get_report_from_portal(url):
-    request = urlrequest.Request(url)
-    response = urlrequest.urlopen(request)
-    if response.status == 200:
-        return response
-    elif response.status == 204:
-        sys.stderr.write(
-            'ERROR: No records of the requested data group are available associated with the provided accession')
+    try:
+        request = urlrequest.Request(url)
+        response = urlrequest.urlopen(request)
+        if response.status == 200:
+            return response
+        elif response.status == 204:
+            sys.stderr.write('ERROR: No records of the requested data group are available associated with the provided accession')
+        else:
+            sys.stderr.write('ERROR: ' + response.msg + '\n')
+            sys.stderr.write('ERROR: Unable to fetch data from url: ' + url + '\n')
         sys.exit(1)
-    else:
-        sys.stderr.write('ERROR: ' + response.msg + '\n')
-        sys.stderr.write('ERROR: Unable to fetch data from url: ' + url + '\n')
-        sys.exit(1)
+    except urlerror.URLError as e:
+        print_certificate_failed_error(e)
+    except Exception as e:
+        raise
 
 
 def download_report_from_portal(url):
@@ -740,3 +739,15 @@ def extract_acc_from_line(line, output_format):
         return line.split()[1][:-1]
     else:
         return ''
+
+def print_certificate_failed_error(e):
+    if sys.platform == 'darwin' and 'CERTIFICATE_VERIFY_FAILED' in str(e):
+        sys.stderr.write(
+            "Error verifying SSL certificate. Have you run \"Install Certificates\" as part of your Python3 installation?\n"
+            "This is a commonly missed step in Python3 installation on a Mac.\n"
+            "Please run the following from a terminal window (update to your Python3 version as needed):\n"
+            "open \"/Applications/Python 3.6/Install Certificates.command\"\n"
+        )
+        sys.exit(1)
+    else:
+        raise
