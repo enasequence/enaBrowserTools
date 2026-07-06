@@ -1,0 +1,16 @@
+image: python:3.11
+
+stages:
+  - test
+
+before_script:
+  - python --version
+  - pip install --upgrade pip
+
+test:
+  stage: test
+  script:
+    - python3 python3/enaDataGet.py --help
+    - python3 python3/enaGroupGet.py --help
+  tags:
+    - dcap-gitlab-runner
